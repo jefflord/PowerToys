@@ -152,12 +152,17 @@ namespace Microsoft.PowerToys.Settings.UI.Library
 
         public bool IsValid()
         {
+            if (Win)
+            {
+                return true;
+            }
+
             if (IsAccessibleShortcut())
             {
                 return false;
             }
 
-            return (Alt || Ctrl || Win || Shift) && Code != 0;
+            return (Alt || Ctrl || Shift) && Code != 0;
         }
 
         public bool IsEmpty()

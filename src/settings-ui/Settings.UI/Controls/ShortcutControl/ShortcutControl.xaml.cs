@@ -86,7 +86,7 @@ namespace Microsoft.PowerToys.Settings.UI.Controls
             internalSettings = new HotkeySettings();
 
             this.Unloaded += ShortcutControl_Unloaded;
-            hook = new HotkeySettingsControlHook(Hotkey_KeyDown, Hotkey_KeyUp, Hotkey_IsActive, FilterAccessibleKeyboardEvents);
+            hook = new HotkeySettingsControlHook(Hotkey_KeyDown, Hotkey_KeyUp, Hotkey_IsActive, FilterAccessibleKeyboardEvents, null);
             ResourceLoader resourceLoader = ResourceLoader.GetForViewIndependentUse();
 
             // We create the Dialog in C# because doing it in XAML is giving WinUI/XAML Island bugs when using dark theme.
@@ -172,7 +172,7 @@ namespace Microsoft.PowerToys.Settings.UI.Controls
             _ = NativeMethods.SendInput(1, inputs, NativeKeyboardHelper.INPUT.Size);
         }
 
-        private bool FilterAccessibleKeyboardEvents(int key, UIntPtr extraInfo)
+        private bool FilterAccessibleKeyboardEvents(int key, UIntPtr extraInfo, bool isKeyUp, object action)
         {
             // A keyboard event sent with this value in the extra Information field should be ignored by the hook so that it can be captured by the system instead.
             if (extraInfo == ignoreKeyEventFlag)
@@ -246,6 +246,13 @@ namespace Microsoft.PowerToys.Settings.UI.Controls
             {
                 // Empty, disable save button
                 shortcutDialog.IsPrimaryButtonEnabled = false;
+            }
+            else if (internalSettings.GetKeysList().Count == 1 && internalSettings.Win)
+            {
+                c.IsError = false;
+                lastValidSettings = internalSettings.Clone();
+                EnableKeys();
+                return;
             }
             else if (internalSettings.GetKeysList().Count == 1)
             {

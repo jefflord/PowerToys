@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -50,6 +52,7 @@ namespace PowerLauncher.ViewModel
         private CancellationToken _updateToken;
         private bool _saved;
         private ushort _hotkeyHandle;
+        private Microsoft.PowerToys.Settings.UI.Library.HotkeySettingsControlHook hook;
 
         private const int _globalHotKeyId = 0x0001;
         private IntPtr _globalHotKeyHwnd;
@@ -765,13 +768,32 @@ namespace PowerLauncher.ViewModel
                 {
                     _globalHotKeyVK = hotkey.Key;
                     _globalHotKeyFSModifiers = VKModifiersFromHotKey(hotkey);
-                    if (NativeMethods.RegisterHotKey(hwnd, _globalHotKeyId, _globalHotKeyFSModifiers, _globalHotKeyVK))
+
+                    if (hotkey.Win && _globalHotKeyVK == 0)
                     {
-                        // Using global hotkey registered through the native RegisterHotKey method.
-                        _globalHotKeyHwnd = hwnd;
-                        _usingGlobalHotKey = true;
-                        Log.Info("Registered global hotkey", GetType());
+                        // this is Win only
+                        if (hook != null)
+                        {
+                            hook.Dispose();
+                            hook = null;
+                        }
+
+                        // System.Diagnostics.Debugger.Launch();
+                        hook = new Microsoft.PowerToys.Settings.UI.Library.HotkeySettingsControlHook(Hotkey_KeyDown, Hotkey_KeyUp, Hotkey_IsActive, FilterAccessibleKeyboardEvents, action);
+
+                        Log.Info("Registered windows global hotkey", GetType());
                         return;
+                    }
+                    else
+                    {
+                        if (NativeMethods.RegisterHotKey(hwnd, _globalHotKeyId, _globalHotKeyFSModifiers, _globalHotKeyVK))
+                        {
+                            // Using global hotkey registered through the native RegisterHotKey method.
+                            _globalHotKeyHwnd = hwnd;
+                            _usingGlobalHotKey = true;
+                            Log.Info("Registered global hotkey", GetType());
+                            return;
+                        }
                     }
 
                     Log.Warn("Registering global shortcut failed. Will use low-level keyboard hook instead.", GetType());
@@ -789,6 +811,321 @@ namespace PowerLauncher.ViewModel
             {
                 string errorMsg = string.Format(CultureInfo.InvariantCulture, Properties.Resources.registerHotkeyFailed, hotkeyStr);
                 MessageBox.Show(errorMsg);
+            }
+        }
+
+        private int lastKeyDown = -1;
+        private int lastKeyUp = -1;
+
+        // private int lastKey = -1;
+        private bool isWinDown;
+        private bool isHotKeyActive = true;
+        private ConcurrentDictionary<int, int> keysDown = new ConcurrentDictionary<int, int>();
+        private bool showAction = true;
+        private int showActionDelay = 1;
+        private bool dirtyBatch;
+
+        private void Hotkey_KeyDown(int key)
+        {
+            if ("X".Length == 1)
+            {
+                return;
+            }
+
+            // System.Diagnostics.Debugger.Launch();
+            if (lastKeyDown != key)
+            {
+                System.Diagnostics.Debug.WriteLine($"CHANGED Hotkey_KeyUp isWinDown {isWinDown}, NEW {key}, LAST {lastKeyDown}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"Hotkey_KeyUp isWinDown {isWinDown}, NEW {key}, LAST {lastKeyDown}");
+            }
+
+            if (key == (int)Windows.System.VirtualKey.LeftWindows)
+            {
+                isWinDown = true;
+            }
+
+            lastKeyDown = key;
+
+            // KeyEventHandler(key, true, key);
+            // c.Keys = internalSettings.GetKeysList();
+        }
+
+        private void Hotkey_KeyUp(int key)
+        {
+            if ("X".Length == 1)
+            {
+                return;
+            }
+
+            if (lastKeyUp != key)
+            {
+                System.Diagnostics.Debug.WriteLine($"CHANGED Hotkey_KeyUp isWinDown {isWinDown}, NEW {key}, LAST {lastKeyUp}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"Hotkey_KeyUp isWinDown {isWinDown}, NEW {key}, LAST {lastKeyUp}");
+            }
+
+            if (key == (int)Windows.System.VirtualKey.LeftWindows)
+            {
+                isWinDown = false;
+            }
+
+            lastKeyUp = key;
+
+            if (keysDown.ContainsKey(key))
+            {
+                keysDown.TryRemove(key, out var x);
+            }
+
+            if (key == 91 && keysDown.IsEmpty)
+            {
+                System.Diagnostics.Debug.WriteLine($"GO A!");
+            }
+
+            // KeyEventHandler(key, true, key);
+            // c.Keys = internalSettings.GetKeysList();
+        }
+
+        private bool Hotkey_IsActive()
+        {
+            // System.Diagnostics.Debug.WriteLine($"Hotkey_IsActive: {isHotKeyActive}");
+            return isHotKeyActive;
+        }
+
+        // return *true* to have windows ignore this input
+        // return *false* to have windows honor this input
+        private bool FilterAccessibleKeyboardEvents(int key, UIntPtr extraInfo, bool isKeyUp, HotkeyCallback action)
+        {
+            var isKeyDown = !isKeyUp;
+
+            if (extraInfo == (UIntPtr)0x5555)
+            {
+                if (isKeyUp && (key == 91 || key == 27))
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+
+            // System.Diagnostics.Debugger.Launch();
+            if (isKeyDown && key == 91)
+            {
+                // System.Diagnostics.Debug.WriteLine($"clearning keys...");
+                dirtyBatch = false;
+                keysDown.Clear();
+            }
+
+            if (isKeyDown && key != 91)
+            {
+                // System.Diagnostics.Debug.WriteLine($"clearning keys...");
+                dirtyBatch = true;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"keys A: {string.Join(",", keysDown.Keys)}");
+
+            if (isKeyDown && !keysDown.ContainsKey(key))
+            {
+                keysDown[key] = key;
+            }
+
+            if (isKeyUp)
+            {
+                keysDown.TryRemove(key, out var x);
+            }
+
+            // System.Diagnostics.Debug.WriteLine($"keys B: {string.Join(",", keysDown.Keys)}");
+            if (isKeyUp && keysDown.IsEmpty && key == 91)
+            {
+                if (dirtyBatch)
+                {
+                    return false;
+                }
+
+                // System.Diagnostics.Debug.WriteLine($"SOLO WIN UP");
+                if (action != null)
+                {
+                    ThreadPool.QueueUserWorkItem((xxe) =>
+                    {
+                        Thread.Sleep(showActionDelay);
+                        SendDummy(27);
+
+                        if (showAction)
+                        {
+                            Thread.Sleep(1);
+                            action();
+                        }
+                    });
+
+                    SendDummy(27);
+
+                    // After invoking the hotkey send a dummy key to prevent Start Menu from activating
+                    // SendDummy(91);
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        [DllImport("user32.dll")]
+        internal static extern uint SendInput(uint nInputs, NativeKeyboardHelper.INPUT[] pInputs, int cbSize);
+
+        private void SendDummy(int key)
+        {
+            /*
+                dummyEvent[0].type = INPUT_KEYBOARD;
+                dummyEvent[0].ki.wVk = 0xFF;
+                dummyEvent[0].ki.dwFlags = KEYEVENTF_KEYUP;
+             */
+
+            NativeKeyboardHelper.INPUT inputShift = new NativeKeyboardHelper.INPUT
+            {
+                type = NativeKeyboardHelper.INPUTTYPE.INPUT_KEYBOARD,
+                data = new NativeKeyboardHelper.InputUnion
+                {
+                    ki = new NativeKeyboardHelper.KEYBDINPUT
+                    {
+                        wVk = (short)key,
+                        dwFlags = 0x0002,
+
+                        // Any keyevent with the extraInfo set to this value will be ignored by the keyboard hook and sent to the system instead.
+                        dwExtraInfo = (UIntPtr)0x5555,
+                    },
+                },
+            };
+
+            NativeKeyboardHelper.INPUT mouseClick = new NativeKeyboardHelper.INPUT
+            {
+                type = NativeKeyboardHelper.INPUTTYPE.INPUT_MOUSE,
+                data = { mi = { dx = 0, dy = 0, mouseData = 0, dwFlags = 0x8000 | 0x0001 | 0x0002 | 0x0004 } },
+            };
+
+            var inputsx = new NativeKeyboardHelper.INPUT[] { inputShift };
+            _ = SendInput(1, inputsx, NativeKeyboardHelper.INPUT.Size);
+
+            inputsx = new NativeKeyboardHelper.INPUT[] { mouseClick };
+
+            // _ = SendInput(1, inputsx, NativeKeyboardHelper.INPUT.Size);
+        }
+
+        private void SendSingleKeyboardInput(short keyCode, uint keyStatus)
+        {
+            if ("X".Length == 1)
+            {
+                NativeKeyboardHelper.INPUT inputShift = new NativeKeyboardHelper.INPUT
+                {
+                    type = NativeKeyboardHelper.INPUTTYPE.INPUT_KEYBOARD,
+                    data = new NativeKeyboardHelper.InputUnion
+                    {
+                        ki = new NativeKeyboardHelper.KEYBDINPUT
+                        {
+                            wVk = keyCode,
+                            dwFlags = keyStatus,
+
+                            // Any keyevent with the extraInfo set to this value will be ignored by the keyboard hook and sent to the system instead.
+                            dwExtraInfo = (UIntPtr)0x5555,
+                        },
+                    },
+                };
+
+                var inputsx = new NativeKeyboardHelper.INPUT[] { inputShift };
+                _ = SendInput(1, inputsx, NativeKeyboardHelper.INPUT.Size);
+            }
+
+            if ("X".Length == 2)
+            {
+                WindowsInteropHelper.INPUT input = new WindowsInteropHelper.INPUT
+                {
+                    Type = WindowsInteropHelper.INPUTTYPE.INPUTKEYBOARD,
+                    Data = new WindowsInteropHelper.InputUnion { ki = new WindowsInteropHelper.KEYBDINPUT { wVk = keyCode, dwFlags = keyStatus, dwExtraInfo = (UIntPtr)0x5555 } },
+                };
+
+                WindowsInteropHelper.INPUT[] inputs = new WindowsInteropHelper.INPUT[] { input };
+                _ = NativeMethods.SendInput(1, inputs, WindowsInteropHelper.INPUT.Size);
+            }
+        }
+
+        internal static class NativeKeyboardHelper
+        {
+            [StructLayout(LayoutKind.Sequential)]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1307:Accessible fields should begin with upper-case letter", Justification = "Matching Native Structure")]
+            internal struct INPUT
+            {
+                internal INPUTTYPE type;
+                internal InputUnion data;
+
+                internal static int Size
+                {
+                    get { return Marshal.SizeOf(typeof(INPUT)); }
+                }
+            }
+
+            [StructLayout(LayoutKind.Explicit)]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1307:Accessible fields should begin with upper-case letter", Justification = "Matching Native Structure")]
+            internal struct InputUnion
+            {
+                [FieldOffset(0)]
+                internal MOUSEINPUT mi;
+                [FieldOffset(0)]
+                internal KEYBDINPUT ki;
+                [FieldOffset(0)]
+                internal HARDWAREINPUT hi;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1307:Accessible fields should begin with upper-case letter", Justification = "Matching Native Structure")]
+            internal struct MOUSEINPUT
+            {
+                internal int dx;
+                internal int dy;
+                internal int mouseData;
+                internal uint dwFlags;
+                internal uint time;
+                internal UIntPtr dwExtraInfo;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1307:Accessible fields should begin with upper-case letter", Justification = "Matching Native Structure")]
+            internal struct KEYBDINPUT
+            {
+                internal short wVk;
+                internal short wScan;
+                internal uint dwFlags;
+                internal int time;
+                internal UIntPtr dwExtraInfo;
+            }
+
+            [StructLayout(LayoutKind.Sequential)]
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1307:Accessible fields should begin with upper-case letter", Justification = "Matching Native Structure")]
+            internal struct HARDWAREINPUT
+            {
+                internal int uMsg;
+                internal short wParamL;
+                internal short wParamH;
+            }
+
+            internal enum INPUTTYPE : uint
+            {
+                INPUT_MOUSE = 0,
+                INPUT_KEYBOARD = 1,
+                INPUT_HARDWARE = 2,
+            }
+
+            [Flags]
+            internal enum KeyEventF
+            {
+                KeyDown = 0x0000,
+                ExtendedKey = 0x0001,
+                KeyUp = 0x0002,
+                Unicode = 0x0004,
+                Scancode = 0x0008,
             }
         }
 

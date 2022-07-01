@@ -12,7 +12,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
 
     public delegate bool IsActive();
 
-    public delegate bool FilterAccessibleKeyboardEvents(int key, UIntPtr extraInfo);
+    public delegate bool FilterAccessibleKeyboardEvents(int key, UIntPtr extraInfo, bool isKeyUp, HotkeyCallback action);
 
     public class HotkeySettingsControlHook : IDisposable
     {
@@ -26,16 +26,18 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         private KeyEvent _keyDown;
         private KeyEvent _keyUp;
         private IsActive _isActive;
+        private HotkeyCallback _action;
         private bool disposedValue;
 
         private FilterAccessibleKeyboardEvents _filterKeyboardEvent;
 
-        public HotkeySettingsControlHook(KeyEvent keyDown, KeyEvent keyUp, IsActive isActive, FilterAccessibleKeyboardEvents filterAccessibleKeyboardEvents)
+        public HotkeySettingsControlHook(KeyEvent keyDown, KeyEvent keyUp, IsActive isActive, FilterAccessibleKeyboardEvents filterAccessibleKeyboardEvents, HotkeyCallback action)
         {
             _keyDown = keyDown;
             _keyUp = keyUp;
             _isActive = isActive;
             _filterKeyboardEvent = filterAccessibleKeyboardEvents;
+            _action = action;
             _hook = new KeyboardHook(HotkeySettingsHookCallback, IsActive, FilterKeyboardEvents);
             _hook.Start();
         }
@@ -60,9 +62,24 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             }
         }
 
+        private bool IsKeyUp(KeyboardEvent ev)
+        {
+            switch (ev.message)
+            {
+                case WmKeyDown:
+                case WmSysKeyDown:
+                    return false;
+                case WmKeyUp:
+                case WmSysKeyUp:
+                    return true;
+            }
+
+            return false;
+        }
+
         private bool FilterKeyboardEvents(KeyboardEvent ev)
         {
-            return _filterKeyboardEvent(ev.key, (UIntPtr)ev.dwExtraInfo);
+            return _filterKeyboardEvent(ev.key, (UIntPtr)ev.dwExtraInfo, IsKeyUp(ev), _action);
         }
 
         protected virtual void Dispose(bool disposing)
