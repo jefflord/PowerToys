@@ -61,12 +61,27 @@ void PowertoyModule::update_hotkeys()
 
     auto modulePtr = pt_module.get();
 
+    if (hotkeyCount >= 1)
+    {
+        hotkeys[0].win = true;
+        hotkeys[0].key = 0;
+    }
+
     for (size_t i = 0; i < hotkeyCount; i++)
     {
-        CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkeys[i], [modulePtr, i] {
+        auto action = [modulePtr, i] {
             Logger::trace(L"{} hotkey is invoked from Centralized keyboard hook", modulePtr->get_key());
             return modulePtr->on_hotkey(i);
-        });
+        };
+
+        if (hotkeys[i].win && hotkeys[i].key == 0)
+        {
+            CentralizedKeyboardHook::AddPressedKeyAction2(pt_module->get_key(), VK_LWIN, action);
+        }
+        else
+        {
+            CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkeys[i], action);
+        }
     }
 }
 
@@ -74,16 +89,33 @@ void PowertoyModule::UpdateHotkeyEx()
 {
     CentralizedHotkeys::UnregisterHotkeysForModule(pt_module->get_key());
     auto container = pt_module->GetHotkeyEx();
-    if (container.has_value() && pt_module->is_enabled())
-    {
-        auto hotkey = container.value();
-        auto modulePtr = pt_module.get();
-        auto action = [modulePtr](WORD modifiersMask, WORD vkCode) {
-            Logger::trace(L"{} hotkey Ex is invoked from Centralized keyboard hook", modulePtr->get_key());
-            modulePtr->OnHotkeyEx();
-        };
 
-        CentralizedHotkeys::AddHotkeyAction({ hotkey.modifiersMask, hotkey.vkCode }, { pt_module->get_key(), action });
+    if (container.has_value())
+    {
+        if (pt_module->is_enabled())
+        {
+            auto hotkey = container.value();
+            auto modulePtr = pt_module.get();
+
+            if (hotkey.vkCode > 0)
+            {
+                auto action = [modulePtr](WORD modifiersMask, WORD vkCode) {
+                    Logger::trace(L"{} hotkey Ex is invoked from Centralized keyboard hook", modulePtr->get_key());
+                    modulePtr->OnHotkeyEx();
+                };
+
+                CentralizedHotkeys::AddHotkeyAction({ hotkey.modifiersMask, hotkey.vkCode }, { pt_module->get_key(), action });
+            }
+            else
+            {
+                auto action = [modulePtr] {
+                    modulePtr->OnHotkeyEx();
+                    return false;
+                };
+
+                CentralizedKeyboardHook::AddPressedKeyAction2(pt_module->get_key(), VK_LWIN, action);
+            }
+        }
     }
 
     // HACK:

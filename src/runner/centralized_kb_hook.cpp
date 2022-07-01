@@ -20,6 +20,8 @@ namespace CentralizedKeyboardHook
     };
 
     std::multiset<HotkeyDescriptor> hotkeyDescriptors;
+    std::set<int> keysPressed;
+    bool dirtyKeysStack = false;
     std::mutex mutex;
     HHOOK hHook{};
 
@@ -91,6 +93,57 @@ namespace CentralizedKeyboardHook
         // Check if the keys are pressed.
         if (!pressedKeyDescriptors.empty())
         {
+            if ((wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
+            {
+                if (keyPressInfo.vkCode == 91)
+                {
+                    keysPressed.clear();
+                    dirtyKeysStack = false;
+                }
+
+                if (keysPressed.contains(91))
+                {
+                    dirtyKeysStack = true;
+                }
+                keysPressed.insert(keyPressInfo.vkCode);
+            }
+
+            if ((wParam == WM_KEYUP || wParam == WM_SYSKEYUP))
+            {
+                if (keyPressInfo.vkCode == 91)
+                {
+                    if (keysPressed.size() == 1 && !dirtyKeysStack)
+                    {
+                        // win-up, escape to kill old win-down
+                        INPUT dummyEvent[1] = {};
+                        dummyEvent[0].type = INPUT_KEYBOARD;                        
+                        dummyEvent[0].ki.wVk = 27;
+                        dummyEvent[0].ki.dwFlags = KEYEVENTF_KEYUP;
+                        SendInput(1, dummyEvent, sizeof(INPUT));
+
+                        PressedKeyDescriptor dummy{ .virtualKey = keyPressInfo.vkCode };                        
+                        auto [it, last] = pressedKeyDescriptors.equal_range(dummy);
+                        for (; it != last; ++it)
+                        {
+                            if (it->millisecondsToPress == 0)
+                            {
+                                it->action();
+                            }
+                        }
+
+                        return CallNextHookEx(hHook, nCode, wParam, lParam);
+                        //return 1;
+                    }
+                }
+                else
+                {
+                    if (keysPressed.contains(keyPressInfo.vkCode))
+                    {
+                        keysPressed.erase(keysPressed.find(keyPressInfo.vkCode));
+                    }
+                }
+            }
+
             bool wasKeyPressed = vkCodePressed != VK_DISABLED;
             // Hold the lock for the shortest possible duration
             if ((wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
@@ -103,7 +156,16 @@ namespace CentralizedKeyboardHook
                     auto [it, last] = pressedKeyDescriptors.equal_range(dummy);
                     for (; it != last; ++it)
                     {
-                        SetTimer(runnerWindow, it->idTimer, it->millisecondsToPress, PressedKeyTimerProc);
+                        if (it->millisecondsToPress > 0)
+                        {
+                            SetTimer(runnerWindow, it->idTimer, it->millisecondsToPress, PressedKeyTimerProc);
+                        }
+                        else
+                        {
+                            return CallNextHookEx(hHook, nCode, wParam, lParam);
+
+                            //SetTimer(runnerWindow, it->idTimer, 500, PressedKeyTimerProc);
+                        }
                     }
                 }
                 else if (vkCodePressed != keyPressInfo.vkCode)
@@ -119,6 +181,7 @@ namespace CentralizedKeyboardHook
                 }
                 vkCodePressed = keyPressInfo.vkCode;
             }
+
             if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
             {
                 std::unique_lock lock{ pressedKeyMutex };
@@ -192,6 +255,16 @@ namespace CentralizedKeyboardHook
         const UINT timerId = upperId << 16 | lowerId;
         std::unique_lock lock{ pressedKeyMutex };
         pressedKeyDescriptors.insert({ .virtualKey = vk, .moduleName = moduleName, .action = std::move(action), .idTimer = timerId, .millisecondsToPress = milliseconds });
+    }
+
+    void AddPressedKeyAction2(const std::wstring& moduleName, const DWORD vk, std::function<bool()>&& action) noexcept
+    {
+        auto hash = std::hash<std::wstring>{}(moduleName); // Hash the module as the upper part of the timer ID.
+        const UINT upperId = hash & 0xFFFF;
+        const UINT lowerId = vk & 0xFFFF; // The key to press can be the lower ID.
+        const UINT timerId = upperId << 16 | lowerId;
+        std::unique_lock lock{ pressedKeyMutex };
+        pressedKeyDescriptors.insert({ .virtualKey = vk, .moduleName = moduleName, .action = std::move(action), .idTimer = timerId, .millisecondsToPress = 0 });
     }
 
     void ClearModuleHotkeys(const std::wstring& moduleName) noexcept

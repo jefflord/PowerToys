@@ -730,6 +730,14 @@ namespace PowerLauncher.ViewModel
             SetHotkey(hwnd, hotkey, action);
         }
 
+        private bool IsElevated
+        {
+            get
+            {
+                return new System.Security.Principal.WindowsPrincipal(System.Security.Principal.WindowsIdentity.GetCurrent()).IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
+            }
+        }
+
         private void SetHotkey(IntPtr hwnd, HotkeyModel hotkeyModel, HotkeyCallback action)
         {
             Log.Info("Set HotKey()", GetType());
@@ -779,8 +787,8 @@ namespace PowerLauncher.ViewModel
                         }
 
                         // System.Diagnostics.Debugger.Launch();
-                        hook = new Microsoft.PowerToys.Settings.UI.Library.HotkeySettingsControlHook(Hotkey_KeyDown, Hotkey_KeyUp, Hotkey_IsActive, FilterAccessibleKeyboardEvents, action);
-
+                        // System.Diagnostics.Debug.WriteLine($"IsElevated {IsElevated}");
+                        // hook = new Microsoft.PowerToys.Settings.UI.Library.HotkeySettingsControlHook(Hotkey_KeyDown, Hotkey_KeyUp, Hotkey_IsActive, FilterAccessibleKeyboardEvents, action);
                         Log.Info("Registered windows global hotkey", GetType());
                         return;
                     }
