@@ -40,7 +40,7 @@ namespace Wox
 
         public void Requery()
         {
-            throw new NotImplementedException("This is a test.");
+            throw new NotImplementedException("Requery coding coming soon.");
         }
 
         public void ChangeQuery(string query, bool requery = false)
