@@ -38,6 +38,11 @@ namespace Wox
             };
         }
 
+        public void Requery()
+        {
+            throw new NotImplementedException("This is a test.");
+        }
+
         public void ChangeQuery(string query, bool requery = false)
         {
             _mainVM.ChangeQueryText(query, requery);
