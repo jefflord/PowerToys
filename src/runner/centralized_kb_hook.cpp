@@ -39,6 +39,7 @@ namespace CentralizedKeyboardHook
     };
     std::multiset<PressedKeyDescriptor> pressedKeyDescriptors;
     std::mutex pressedKeyMutex;
+    long LastKeyInChord = 0;
 
     // keep track of last pressed key, to detect repeated keys and if there are more keys pressed.
     const DWORD VK_DISABLED = CommonSharedConstants::VK_DISABLED;
@@ -93,6 +94,13 @@ namespace CentralizedKeyboardHook
             // The new keystroke was generated from one of our actions. We should pass it along.
             return CallNextHookEx(hHook, nCode, wParam, lParam);
         }
+
+        /*
+        if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+        {
+            Logger::trace(L"KEY UP");
+        }
+        */
 
         // Check if the keys are pressed.
         if (!pressedKeyDescriptors.empty())
@@ -151,6 +159,8 @@ namespace CentralizedKeyboardHook
             .key = static_cast<unsigned char>(keyPressInfo.vkCode)
         };
 
+        handleCreateProcessHotKeysAndChords(hotkey, keyPressInfo, wParam);
+
         std::function<bool()> action;
         {
             // Hold the lock for the shortest possible duration
@@ -180,6 +190,46 @@ namespace CentralizedKeyboardHook
         }
 
         return CallNextHookEx(hHook, nCode, wParam, lParam);
+    }
+
+    void handleCreateProcessHotKeysAndChords(CentralizedKeyboardHook::Hotkey& hotkey, const KBDLLHOOKSTRUCT& keyPressInfo, WPARAM& wParam)
+    {
+        if (hotkey.win || hotkey.shift || hotkey.ctrl)
+        {
+            if ((keyPressInfo.vkCode != 79 && keyPressInfo.vkCode != 80))
+            {
+                LastKeyInChord = 0;
+            }
+        }
+
+        if (hotkey.win && hotkey.shift && hotkey.ctrl)
+        {
+            if ((keyPressInfo.vkCode != 79 && keyPressInfo.vkCode != 80))
+            {
+                LastKeyInChord = 0;
+            }
+            else
+            {
+                if ((keyPressInfo.vkCode == 79 || keyPressInfo.vkCode == 80) && hotkey.win && hotkey.shift && hotkey.ctrl)
+                {
+                    Logger::trace(L"wParam {}", wParam);
+
+                    if (LastKeyInChord == 79 && keyPressInfo.vkCode == 80)
+                    {
+                        LastKeyInChord = 0;
+                        std::wstring executable_path = L"C:\\Program Files\\ActualHideDesktopIcons\\ActualHideDesktopIcons.exe";
+                        std::wstring executable_args = fmt::format(L"\"{}\"", executable_path);
+                        STARTUPINFO startup_info = { sizeof(startup_info) };
+                        PROCESS_INFORMATION process_info = { 0 };
+                        CreateProcessW(executable_path.c_str(), executable_args.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup_info, &process_info);
+                    }
+                    else
+                    {
+                        LastKeyInChord = keyPressInfo.vkCode;
+                    }
+                }
+            }
+        }
     }
 
     void SetHotkeyAction(const std::wstring& moduleName, const Hotkey& hotkey, std::function<bool()>&& action) noexcept

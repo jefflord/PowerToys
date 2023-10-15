@@ -68,6 +68,27 @@ void PowertoyModule::update_hotkeys()
             return modulePtr->on_hotkey(i);
         });
     }
+
+    PowertoyModuleIface::Hotkey hotkey;
+
+    hotkey.alt = false;
+    hotkey.win = true;
+    hotkey.shift = true;
+    hotkey.ctrl = true;
+    hotkey.key = 79;
+
+    long emptyValue = 0;
+
+    CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkey, [modulePtr, emptyValue] {
+        Logger::trace(L"{} hotkey is invoked from Centralized keyboard hook", modulePtr->get_key());
+        return true;
+    });
+
+    hotkey.key = 80;
+    CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkey, [modulePtr, emptyValue] {
+        Logger::trace(L"{} hotkey is invoked from Centralized keyboard hook", modulePtr->get_key());
+        return true;
+    });
 }
 
 void PowertoyModule::UpdateHotkeyEx()
@@ -86,11 +107,23 @@ void PowertoyModule::UpdateHotkeyEx()
         CentralizedHotkeys::AddHotkeyAction({ hotkey.modifiersMask, hotkey.vkCode }, { pt_module->get_key(), action });
     }
 
+    // Hotkey hotkey{
+    //    .win = (GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000),
+    //    .ctrl = static_cast<bool>(GetAsyncKeyState(VK_CONTROL) & 0x8000),
+    //    .shift = static_cast<bool>(GetAsyncKeyState(VK_SHIFT) & 0x8000),
+    //    .alt = static_cast<bool>(GetAsyncKeyState(VK_MENU) & 0x8000),
+    //    .key = static_cast<unsigned char>(keyPressInfo.vkCode)
+    //};
+    //Shortcut shortcut, Action action
+    //Shortcut shortcut, Action action
+    //CentralizedHotkeys::AddHotkeyAction({ hotkey.modifiersMask, hotkey.vkCode }, { pt_module->get_key(), action });
+    //79
+
     // HACK:
     // Just for enabling the shortcut guide legacy behavior of pressing the Windows Key.
     // This is not the sort of behavior we'd like to have generalized on other modules.
     // But this was a way to bring back the long windows key behavior that the community wanted back while maintaining the separate process.
-    if (pt_module->keep_track_of_pressed_win_key())
+    //if (pt_module->keep_track_of_pressed_win_key())
     {
         auto modulePtr = pt_module.get();
         auto action = [modulePtr] {
@@ -99,5 +132,11 @@ void PowertoyModule::UpdateHotkeyEx()
         };
         CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_LWIN, pt_module->milliseconds_win_key_must_be_pressed(), action);
         CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_RWIN, pt_module->milliseconds_win_key_must_be_pressed(), action);
+
+
+        CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_LCONTROL, pt_module->milliseconds_win_key_must_be_pressed(), action);
+        CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_LSHIFT, pt_module->milliseconds_win_key_must_be_pressed(), action);    
     }
+
+    
 }
