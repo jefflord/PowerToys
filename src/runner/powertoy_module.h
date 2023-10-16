@@ -41,7 +41,7 @@ public:
     json::JsonObject json_config() const;
 
     void update_hotkeys();
-
+    void add_run_program_shortcuts();    
     void UpdateHotkeyEx();
 
 private:

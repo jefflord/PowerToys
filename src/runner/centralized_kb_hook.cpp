@@ -2,6 +2,7 @@
 #include "centralized_kb_hook.h"
 #include <common/debug_control.h>
 #include <common/utils/winapi_error.h>
+#include <common/utils/json.h>
 #include <common/logger/logger.h>
 #include <common/interop/shared_constants.h>
 
@@ -39,7 +40,7 @@ namespace CentralizedKeyboardHook
     };
     std::multiset<PressedKeyDescriptor> pressedKeyDescriptors;
     std::mutex pressedKeyMutex;
-    long LastKeyInChord = 0;
+    long lastKeyInChord = 0;
 
     // keep track of last pressed key, to detect repeated keys and if there are more keys pressed.
     const DWORD VK_DISABLED = CommonSharedConstants::VK_DISABLED;
@@ -159,7 +160,7 @@ namespace CentralizedKeyboardHook
             .key = static_cast<unsigned char>(keyPressInfo.vkCode)
         };
 
-        handleCreateProcessHotKeysAndChords(hotkey, keyPressInfo, wParam);
+        handleCreateProcessHotKeysAndChords(hotkey);
 
         std::function<bool()> action;
         {
@@ -192,40 +193,162 @@ namespace CentralizedKeyboardHook
         return CallNextHookEx(hHook, nCode, wParam, lParam);
     }
 
-    void handleCreateProcessHotKeysAndChords(CentralizedKeyboardHook::Hotkey& hotkey, const KBDLLHOOKSTRUCT& keyPressInfo, WPARAM& wParam)
+    class RunProgramSpec
     {
-        if (hotkey.win || hotkey.shift || hotkey.ctrl)
+    public:
+        bool win = false;
+        bool shift = false;
+        bool alt = false;
+        bool ctrl = false;
+        std::wstring path = L"";
+        std::vector<UCHAR> keys;
+
+        //RunProgramSpec()
+        //{
+        //    // Initialization
+        //}
+    };
+
+    bool getConfigInit = false;
+    std::vector<RunProgramSpec> runProgramSpecs;
+
+    void RefreshConfig()
+    {
+        getConfigInit = false;
+        runProgramSpecs.clear();
+    }
+
+    void setupConfig()
+    {
+        if (!getConfigInit)
         {
-            if ((keyPressInfo.vkCode != 79 && keyPressInfo.vkCode != 80))
+            auto jsonData = json::from_file(L"c:\\Temp\\keyboardManagerConfig.json");
+
+            if (!jsonData)
             {
-                LastKeyInChord = 0;
+                return;
+            }
+
+            auto keyboardManagerConfig = jsonData->GetNamedObject(L"runProgramShortcuts");
+
+            if (keyboardManagerConfig)
+            {
+                auto global = keyboardManagerConfig.GetNamedArray(L"global");
+                for (const auto& it : global)
+                {
+                    try
+                    {
+                        // auto isChord = it.GetObjectW().GetNamedBoolean(L"isChord");
+                        RunProgramSpec runProgramSpec;
+                        runProgramSpec.win = true;
+
+                        runProgramSpec.win = it.GetObjectW().GetNamedBoolean(L"win");
+                        runProgramSpec.shift = it.GetObjectW().GetNamedBoolean(L"shift");
+                        runProgramSpec.alt = it.GetObjectW().GetNamedBoolean(L"alt");
+                        runProgramSpec.ctrl = it.GetObjectW().GetNamedBoolean(L"control");
+
+                        auto keys = it.GetObjectW().GetNamedArray(L"keys");
+                        auto program = it.GetObjectW().GetNamedObject(L"program");
+                        auto path = program.GetObjectW().GetNamedString(L"path");
+
+                        runProgramSpec.path = path;
+
+                        for (const auto& key : keys)
+                        {
+                            runProgramSpec.keys.push_back(static_cast<UCHAR>(key.GetNumber()));
+                        }
+
+                        runProgramSpecs.push_back(runProgramSpec);
+                    }
+                    catch (...)
+                    {
+                        Logger::error(L"Improper Key Data JSON. Try the next remap.");
+                    }
+                }
+            }
+
+            getConfigInit = true;
+        }
+    }
+
+    bool isPartOfAnyRunProgramSpec(UCHAR key)
+    {
+        for (RunProgramSpec runProgramSpec : runProgramSpecs)
+        {
+            for (unsigned char c : runProgramSpec.keys)
+            {
+                if (c == key)
+                {
+                    return true;
+                }
             }
         }
+        return false;
+    }
 
-        if (hotkey.win && hotkey.shift && hotkey.ctrl)
+    bool isPartOfThisRunProgramSpec(RunProgramSpec runProgramSpec, UCHAR key)
+    {
+        for (unsigned char c : runProgramSpec.keys)
         {
-            if ((keyPressInfo.vkCode != 79 && keyPressInfo.vkCode != 80))
+            if (c == key)
             {
-                LastKeyInChord = 0;
+                return true;
             }
-            else
-            {
-                if ((keyPressInfo.vkCode == 79 || keyPressInfo.vkCode == 80) && hotkey.win && hotkey.shift && hotkey.ctrl)
-                {
-                    Logger::trace(L"wParam {}", wParam);
+        }
+        return false;
+    }
 
-                    if (LastKeyInChord == 79 && keyPressInfo.vkCode == 80)
+    void handleCreateProcessHotKeysAndChords(CentralizedKeyboardHook::Hotkey& hotkey)
+    {
+        if (hotkey.win || hotkey.shift || hotkey.ctrl || hotkey.alt)
+        {
+            setupConfig();
+
+            if (!isPartOfAnyRunProgramSpec(hotkey.key))
+            {
+                lastKeyInChord = 0;
+                return;
+            }
+        }
+        else
+        {
+            return;
+        }
+
+        for (RunProgramSpec runProgramSpec : runProgramSpecs)
+        {
+            if (runProgramSpec.win == hotkey.win && runProgramSpec.shift == hotkey.shift && runProgramSpec.ctrl == hotkey.ctrl && runProgramSpec.alt == hotkey.alt)
+            {
+                auto runProgram = false;
+                if (runProgramSpec.keys.size() == 1 && runProgramSpec.keys[0] == hotkey.key)
+                {
+                    runProgram = true;
+                }
+                else if (runProgramSpec.keys.size() == 2 && runProgramSpec.keys[0] == lastKeyInChord && runProgramSpec.keys[1] == hotkey.key)
+                {
+                    runProgram = true;
+                }
+                else
+                {
+                    lastKeyInChord = hotkey.key;
+                }
+
+                if (runProgram)
+                {
+                    Logger::trace(L"runProgram {}", runProgram);
+                    lastKeyInChord = 0;
+
+                    if (runProgramSpec.path.compare(L"RefreshConfig") == 0)
                     {
-                        LastKeyInChord = 0;
-                        std::wstring executable_path = L"C:\\Program Files\\ActualHideDesktopIcons\\ActualHideDesktopIcons.exe";
+                        RefreshConfig();
+                    }
+                    else
+                    {
+                        std::wstring executable_path = runProgramSpec.path;
                         std::wstring executable_args = fmt::format(L"\"{}\"", executable_path);
                         STARTUPINFO startup_info = { sizeof(startup_info) };
                         PROCESS_INFORMATION process_info = { 0 };
                         CreateProcessW(executable_path.c_str(), executable_args.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup_info, &process_info);
-                    }
-                    else
-                    {
-                        LastKeyInChord = keyPressInfo.vkCode;
                     }
                 }
             }

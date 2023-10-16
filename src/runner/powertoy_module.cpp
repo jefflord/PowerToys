@@ -69,26 +69,70 @@ void PowertoyModule::update_hotkeys()
         });
     }
 
-    PowertoyModuleIface::Hotkey hotkey;
+    // Add reg for run program shortuts
+    add_run_program_shortcuts();
 
+    CentralizedKeyboardHook::RefreshConfig();
+}
+
+void PowertoyModule::add_run_program_shortcuts()
+{
+    long emptyValue = 0;
+    auto modulePtr = pt_module.get();
+    PowertoyModuleIface::Hotkey hotkey;
     hotkey.alt = false;
     hotkey.win = true;
     hotkey.shift = true;
     hotkey.ctrl = true;
-    hotkey.key = 79;
 
-    long emptyValue = 0;
+    try
+    {
+        auto jsonData = json::from_file(L"c:\\Temp\\keyboardManagerConfig.json");
 
-    CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkey, [modulePtr, emptyValue] {
-        Logger::trace(L"{} hotkey is invoked from Centralized keyboard hook", modulePtr->get_key());
-        return true;
-    });
+        if (!jsonData)
+        {
+            return;
+        }
 
-    hotkey.key = 80;
-    CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkey, [modulePtr, emptyValue] {
-        Logger::trace(L"{} hotkey is invoked from Centralized keyboard hook", modulePtr->get_key());
-        return true;
-    });
+        auto keyboardManagerConfig = jsonData->GetNamedObject(L"runProgramShortcuts");
+
+        if (keyboardManagerConfig)
+        {
+            auto global = keyboardManagerConfig.GetNamedArray(L"global");
+            for (const auto& it : global)
+            {
+                try
+                {
+                    // auto isChord = it.GetObjectW().GetNamedBoolean(L"isChord");
+                    hotkey.win = it.GetObjectW().GetNamedBoolean(L"win");
+                    hotkey.shift = it.GetObjectW().GetNamedBoolean(L"shift");
+                    hotkey.alt = it.GetObjectW().GetNamedBoolean(L"alt");
+                    hotkey.ctrl = it.GetObjectW().GetNamedBoolean(L"control");
+
+                    auto keys = it.GetObjectW().GetNamedArray(L"keys");
+                    auto program = it.GetObjectW().GetNamedObject(L"program");
+                    auto path = program.GetObjectW().GetNamedString(L"path");
+
+                    for (const auto& key : keys)
+                    {
+                        hotkey.key = static_cast<UCHAR>(key.GetNumber());
+                        CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkey, [modulePtr, emptyValue] {
+                            Logger::trace(L"{} hotkey is invoked from Centralized keyboard hook", modulePtr->get_key());
+                            return true;
+                        });
+                    }
+                }
+                catch (...)
+                {
+                    Logger::error(L"Improper Key Data JSON. Try the next remap.");
+                }
+            }
+        }
+    }
+    catch (...)
+    {
+        Logger::error(L"Improper Key Data JSON. Try the next remap.");
+    }
 }
 
 void PowertoyModule::UpdateHotkeyEx()
@@ -106,6 +150,8 @@ void PowertoyModule::UpdateHotkeyEx()
 
         CentralizedHotkeys::AddHotkeyAction({ hotkey.modifiersMask, hotkey.vkCode }, { pt_module->get_key(), action });
     }
+
+    CentralizedKeyboardHook::RefreshConfig();
 
     // Hotkey hotkey{
     //    .win = (GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000),
@@ -133,10 +179,7 @@ void PowertoyModule::UpdateHotkeyEx()
         CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_LWIN, pt_module->milliseconds_win_key_must_be_pressed(), action);
         CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_RWIN, pt_module->milliseconds_win_key_must_be_pressed(), action);
 
-
         CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_LCONTROL, pt_module->milliseconds_win_key_must_be_pressed(), action);
-        CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_LSHIFT, pt_module->milliseconds_win_key_must_be_pressed(), action);    
+        CentralizedKeyboardHook::AddPressedKeyAction(pt_module->get_key(), VK_LSHIFT, pt_module->milliseconds_win_key_must_be_pressed(), action);
     }
-
-    
 }
