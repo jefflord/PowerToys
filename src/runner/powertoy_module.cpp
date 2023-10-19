@@ -69,7 +69,7 @@ void PowertoyModule::update_hotkeys()
         });
     }
 
-    // Add reg for run program shortuts
+    // Add reg for run program shortcuts
     add_run_program_shortcuts();
 
     CentralizedKeyboardHook::RefreshConfig();

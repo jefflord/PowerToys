@@ -103,6 +103,15 @@ void KeyboardManagerState::ConfigureDetectShortcutUI(const StackPanel& textBlock
     currentShortcutUI2 = textBlock2.as<winrt::Windows::Foundation::IInspectable>();
 }
 
+// Function to set the textblock of the detect run program UI so that it can be accessed by the hook
+void KeyboardManagerState::ConfigureDetectRunProgramUI(const StackPanel& textBlock1, const StackPanel& textBlock2)
+{
+    std::lock_guard<std::mutex> lock(currentShortcutUI_mutex);
+    currentShortcutUI1 = textBlock1.as<winrt::Windows::Foundation::IInspectable>();
+    currentShortcutUI2 = textBlock2.as<winrt::Windows::Foundation::IInspectable>();
+}
+
+
 // Function to set the textblock of the detect remap key UI so that it can be accessed by the hook
 void KeyboardManagerState::ConfigureDetectSingleKeyRemapUI(const StackPanel& textBlock)
 {

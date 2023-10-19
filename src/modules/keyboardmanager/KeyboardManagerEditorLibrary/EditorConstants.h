@@ -14,6 +14,12 @@ namespace EditorConstants
     inline const int MinimumEditShortcutsWindowHeight = 500;
     inline const int EditShortcutsTableMinWidth = 1000;
 
+    inline const int DefaultEditRunProgramsWindowWidth = 1050;
+    inline const int DefaultEditRunProgramsWindowHeight = 600;
+    inline const int MinimumEditRunProgramsWindowWidth = 500;
+    inline const int MinimumEditRunProgramsWindowHeight = 500;
+    inline const int EditRunProgramsTableMinWidth = 1000;
+
     // Key Remap table constants
     inline const long RemapTableColCount = 4;
     inline const long RemapTableHeaderCount = 2;
@@ -36,6 +42,20 @@ namespace EditorConstants
     inline const DWORD64 ShortcutTableDropDownSpacing = 10;
     inline const long ShortcutOriginColumnWidth = 3 * ShortcutTableDropDownWidth + 3 * ShortcutTableDropDownSpacing;
     inline const long ShortcutTargetColumnWidth = 3 * ShortcutTableDropDownWidth + 3 * ShortcutTableDropDownSpacing + 15;
+
+    // RunProgram table constants
+    inline const long RunProgramTableColCount = 5;
+    inline const long RunProgramTableHeaderCount = 3;
+    inline const long RunProgramTableOriginalColIndex = 0;
+    inline const long RunProgramTableArrowColIndex = 1;
+    inline const long RunProgramTableNewColIndex = 2;
+    inline const long RunProgramTableTargetAppColIndex = 3;
+    inline const long RunProgramTableRemoveColIndex = 4;
+    inline const long RunProgramArrowColumnWidth = 90;
+    inline const DWORD64 RunProgramTableDropDownWidth = 110;
+    inline const DWORD64 RunProgramTableDropDownSpacing = 10;
+    inline const long RunProgramOriginColumnWidth = 3 * RunProgramTableDropDownWidth + 3 * RunProgramTableDropDownSpacing;
+    inline const long RunProgramTargetColumnWidth = 3 * RunProgramTableDropDownWidth + 3 * RunProgramTableDropDownSpacing + 15;
 
     // Drop down height used for both Edit Keyboard and Edit Shortcuts
     inline const DWORD64 TableDropDownHeight = 200;

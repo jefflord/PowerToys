@@ -26,7 +26,7 @@ public:
     ModifierKey winKey = ModifierKey::Disabled;
     ModifierKey ctrlKey = ModifierKey::Disabled;
     ModifierKey altKey = ModifierKey::Disabled;
-    ModifierKey shiftKey = ModifierKey::Disabled;
+    ModifierKey shiftKey = ModifierKey::Disabled;    
     DWORD actionKey = {};
 
     Shortcut() = default;

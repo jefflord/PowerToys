@@ -16,6 +16,7 @@
 
 #include <EditKeyboardWindow.h>
 #include <EditShortcutsWindow.h>
+#include <EditRunProgramsWindow.h>
 #include <KeyboardManagerState.h>
 
 std::unique_ptr<KeyboardManagerEditor> editor = nullptr;
@@ -158,6 +159,10 @@ void KeyboardManagerEditor::OpenEditorWindow(KeyboardManagerEditorType type)
         break;
     case KeyboardManagerEditorType::ShortcutEditor:
         CreateEditShortcutsWindow(hInstance, keyboardManagerState, mappingConfiguration);
+        break;
+    case KeyboardManagerEditorType::RunProgramEditor:
+        CreateEditRunProgramsWindow(hInstance, keyboardManagerState, mappingConfiguration);
+        break;
     }
 }
 

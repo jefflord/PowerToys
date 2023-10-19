@@ -3,6 +3,7 @@
 #include <keyboardmanager/common/Helpers.h>
 
 #include "ShortcutErrorType.h"
+#include "RunProgramErrorType.h"
 
 class MappingConfiguration;
 
@@ -10,6 +11,9 @@ namespace LoadingAndSavingRemappingHelper
 {
     // Function to check if the set of remappings in the buffer are valid
     ShortcutErrorType CheckIfRemappingsAreValid(const RemapBuffer& remappings);
+
+    // Function to check if the set of remappings in the buffer are valid
+    RunProgramErrorType CheckIfRunProgramsAreValid(const RemapBuffer& remappings);
 
     // Function to return the set of keys that have been orphaned from the remap buffer
     std::vector<DWORD> GetOrphanedKeys(const RemapBuffer& remappings);

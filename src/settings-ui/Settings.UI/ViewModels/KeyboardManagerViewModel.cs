@@ -37,6 +37,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         {
             KeyEditor = 0,
             ShortcutEditor,
+            RunProgramEditor,
         }
 
         private GpoRuleConfigured _enabledGpoRuleConfiguration;
@@ -47,6 +48,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
 
         private ICommand _remapKeyboardCommand;
         private ICommand _editShortcutCommand;
+        private ICommand _editRunProgramCommand;
         private KeyboardManagerProfile _profile;
 
         private Func<string, int> SendConfigMSG { get; }
@@ -201,6 +203,23 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
             }
         }
 
+        public List<AppSpecificKeysDataModel> RemapRunPrograms
+        {
+            get
+            {
+                if (_profile != null)
+                {
+                    return _profile.RemapShortcuts.RunProgramShortcuts;
+
+                    // CombineShortcutLists(_profile.RemapShortcuts.AppSpecificRemapShortcuts, new List<AppSpecificKeysDataModel>());
+                }
+                else
+                {
+                    return new List<AppSpecificKeysDataModel>();
+                }
+            }
+        }
+
         public List<AppSpecificKeysDataModel> RemapShortcuts
         {
             get
@@ -220,6 +239,8 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
 
         public ICommand EditShortcutCommand => _editShortcutCommand ?? (_editShortcutCommand = new RelayCommand(OnEditShortcut));
 
+        public ICommand EditRunProgramCommand => _editRunProgramCommand ?? (_editRunProgramCommand = new RelayCommand(OnEditRunProgram));
+
         private void OnRemapKeyboard()
         {
             OpenEditor((int)KeyboardManagerEditorType.KeyEditor);
@@ -228,6 +249,11 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         private void OnEditShortcut()
         {
             OpenEditor((int)KeyboardManagerEditorType.ShortcutEditor);
+        }
+
+        private void OnEditRunProgram()
+        {
+            OpenEditor((int)KeyboardManagerEditorType.RunProgramEditor);
         }
 
         private static void BringProcessToFront(Process process)

@@ -8,6 +8,7 @@
 
 using SingleKeyRemapTable = std::unordered_map<DWORD, KeyShortcutUnion>;
 using ShortcutRemapTable = std::map<Shortcut, RemapShortcut>;
+using RunProgramRemapTable = std::map<Shortcut, RemapShortcut>;
 using AppSpecificShortcutRemapTable = std::map<std::wstring, ShortcutRemapTable>;
 
 class MappingConfiguration
@@ -32,6 +33,9 @@ public:
     // Function to clear the App specific shortcut remapping table
     void ClearAppSpecificShortcuts();
 
+    // Function to clear the App specific run program table
+    void ClearAppSpecificRunProgram();
+    
     // Function to add a new single key to key remapping
     bool AddSingleKeyRemap(const DWORD& originalKey, const KeyShortcutUnion& newRemapKey);
 
@@ -41,6 +45,9 @@ public:
     // Function to add a new App specific level shortcut remapping
     bool AddAppSpecificShortcut(const std::wstring& app, const Shortcut& originalSC, const KeyShortcutUnion& newSC);
 
+    // Function to add a new run program
+    bool AddAppSpecificRunProgram(const std::wstring& app, const Shortcut& originalSC, const KeyShortcutUnion& newSC);
+    
     // The map members and their mutexes are left as public since the maps are used extensively in dllmain.cpp.
     // Maps which store the remappings for each of the features. The bool fields should be initialized to false. They are used to check the current state of the shortcut (i.e is that particular shortcut currently pressed down or not).
     // Stores single key remappings
@@ -50,9 +57,17 @@ public:
     ShortcutRemapTable osLevelShortcutReMap;
     std::vector<Shortcut> osLevelShortcutReMapSortedKeys;
 
+    // Stores the os level shortcut remappings
+    //RunProgramRemapTable osLevelRunProgramReMap;
+    //std::vector<Shortcut> osLevelRunProgramReMapSortedKeys;
+
     // Stores the app-specific shortcut remappings. Maps application name to the shortcut map
     AppSpecificShortcutRemapTable appSpecificShortcutReMap;
     std::map<std::wstring, std::vector<Shortcut>> appSpecificShortcutReMapSortedKeys;
+
+    // Stores the run program shortcut remappings.
+    AppSpecificShortcutRemapTable appSpecificRunProgramReMap;
+    std::map<std::wstring, std::vector<Shortcut>> appSpecificRunProgramReMapSortedKeys;
 
     // Stores the current configuration name.
     std::wstring currentConfig = KeyboardManagerConstants::DefaultConfiguration;
@@ -62,4 +77,7 @@ private:
     bool LoadSingleKeyRemaps(const json::JsonObject& jsonData);
     bool LoadShortcutRemaps(const json::JsonObject& jsonData);
     bool LoadAppSpecificShortcutRemaps(const json::JsonObject& remapShortcutsData);
+    bool LoadRunProgramRemaps(const json::JsonObject& remapShortcutsData);
+    
+    
 };

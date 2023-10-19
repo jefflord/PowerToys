@@ -40,7 +40,16 @@ namespace KBMEditor
         // If set to this value then the detect shortcut window is currently active and it requires a hook
         DetectShortcutWindowActivated,
         // If set to this value then the edit shortcuts window is currently active and remaps should not be applied
-        EditShortcutsWindowActivated
+        EditShortcutsWindowActivated,
+        // If set to this value then the edit run-programs window is currently active and this should not be applied
+        RunProgramsWindowActivated,
+
+        // If set to this value then the detect shortcut window in edit keyboard window is currently active and it requires a hook
+        DetectRunProgramWindowInEditKeyboardWindowActivated,
+        // If set to this value then the detect shortcut window is currently active and it requires a hook
+        DetectRunProgramWindowActivated,
+        // If set to this value then the edit shortcuts window is currently active and remaps should not be applied
+        EditRunProgramsWindowActivated,
     };
 
     // Class to store the shared state of the keyboard manager between the UI and the hook
@@ -107,6 +116,9 @@ namespace KBMEditor
 
         // Function to set the textblock of the detect shortcut UI so that it can be accessed by the hook
         void ConfigureDetectShortcutUI(const winrt::Windows::UI::Xaml::Controls::StackPanel& textBlock1, const winrt::Windows::UI::Xaml::Controls::StackPanel& textBlock2);
+
+        // Function to set the textblock of the detect run program UI so that it can be accessed by the hook
+        void ConfigureDetectRunProgramUI(const winrt::Windows::UI::Xaml::Controls::StackPanel& textBlock1, const winrt::Windows::UI::Xaml::Controls::StackPanel& textBlock2);        
 
         // Function to set the textblock of the detect remap key UI so that it can be accessed by the hook
         void ConfigureDetectSingleKeyRemapUI(const winrt::Windows::UI::Xaml::Controls::StackPanel& textBlock);

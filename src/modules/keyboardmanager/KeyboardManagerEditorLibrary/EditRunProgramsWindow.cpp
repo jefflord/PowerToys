@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "EditShortcutsWindow.h"
+#include "EditRunProgramsWindow.h"
 
 #include <common/Display/dpi_aware.h>
 #include <common/utils/EventLocker.h>
@@ -10,28 +10,28 @@
 #include "Dialog.h"
 #include "KeyDropDownControl.h"
 #include "LoadingAndSavingRemappingHelper.h"
-#include "ShortcutControl.h"
+#include "RunProgramControl.h"
 #include "Styles.h"
 #include "UIHelpers.h"
 #include "XamlBridge.h"
-#include "ShortcutErrorType.h"
+#include "RunProgramErrorType.h"
 #include "EditorConstants.h"
 
 using namespace winrt::Windows::Foundation;
 
 static UINT g_currentDPI = DPIAware::DEFAULT_DPI;
 
-LRESULT CALLBACK EditShortcutsWindowProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK EditRunProgramsWindowProc(HWND, UINT, WPARAM, LPARAM);
 
 // This Hwnd will be the window handler for the Xaml Island: A child window that contains Xaml.
-HWND hWndXamlIslandEditShortcutsWindow = nullptr;
+HWND hWndXamlIslandEditRunProgramsWindow = nullptr;
 
 // This variable is used to check if window registration has been done to avoid repeated registration leading to an error.
-bool isEditShortcutsWindowRegistrationCompleted = false;
+bool isEditRunProgramsWindowRegistrationCompleted = false;
 
-// Holds the native window handle of EditShortcuts Window.
-HWND hwndEditShortcutsNativeWindow = nullptr;
-std::mutex editShortcutsWindowMutex;
+// Holds the native window handle of EditRunPrograms Window.
+HWND hwndEditRunProgramsNativeWindow = nullptr;
+std::mutex editRunProgramsWindowMutex;
 
 // Stores a pointer to the Xaml Bridge object so that it can be accessed from the window procedure
 static XamlBridge* xamlBridgePtr = nullptr;
@@ -41,9 +41,9 @@ static IAsyncAction OnClickAccept(
     XamlRoot root,
     std::function<void()> ApplyRemappings)
 {
-    ShortcutErrorType isSuccess = LoadingAndSavingRemappingHelper::CheckIfRemappingsAreValid(ShortcutControl::shortcutRemapBuffer);
+    RunProgramErrorType isSuccess = LoadingAndSavingRemappingHelper::CheckIfRunProgramsAreValid(RunProgramControl::runProgramRemapBuffer);
 
-    if (isSuccess != ShortcutErrorType::NoError)
+    if (isSuccess != RunProgramErrorType::NoError)
     {
         if (!co_await Dialog::PartialRemappingConfirmationDialog(root, GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_PARTIALCONFIRMATIONDIALOGTITLE)))
         {
@@ -53,10 +53,10 @@ static IAsyncAction OnClickAccept(
     ApplyRemappings();
 }
 
-// Function to create the Edit Shortcuts Window
-inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardManagerState& keyboardManagerState, MappingConfiguration& mappingConfiguration)
+// Function to create the Edit RunPrograms Window
+inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardManagerState& keyboardManagerState, MappingConfiguration& mappingConfiguration)
 {
-    Logger::trace("CreateEditShortcutsWindowImpl()");
+    Logger::trace("CreateEditRunProgramsWindowImpl()");
     auto locker = EventLocker::Get(KeyboardManagerConstants::EditorWindowEventName.c_str());
     if (!locker.has_value())
     {
@@ -66,13 +66,13 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
     Logger::trace(L"Signaled {} event to suspend the KBM engine", KeyboardManagerConstants::EditorWindowEventName);
 
     // Window Registration
-    const wchar_t szWindowClass[] = L"EditShortcutsWindow";
+    const wchar_t szWindowClass[] = L"EditRunProgramsWindow";
 
-    if (!isEditShortcutsWindowRegistrationCompleted)
+    if (!isEditRunProgramsWindowRegistrationCompleted)
     {
         WNDCLASSEX windowClass = {};
         windowClass.cbSize = sizeof(WNDCLASSEX);
-        windowClass.lpfnWndProc = EditShortcutsWindowProc;
+        windowClass.lpfnWndProc = EditRunProgramsWindowProc;
         windowClass.hInstance = hInst;
         windowClass.lpszClassName = szWindowClass;
         windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW);
@@ -89,22 +89,22 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
             return;
         }
 
-        isEditShortcutsWindowRegistrationCompleted = true;
+        isEditRunProgramsWindowRegistrationCompleted = true;
     }
 
     // Find coordinates of the screen where the settings window is placed.
     RECT desktopRect = UIHelpers::GetForegroundWindowDesktopRect();
 
     // Calculate DPI dependent window size
-    float windowWidth = EditorConstants::DefaultEditShortcutsWindowWidth;
-    float windowHeight = EditorConstants::DefaultEditShortcutsWindowHeight;
+    float windowWidth = EditorConstants::DefaultEditRunProgramsWindowWidth;
+    float windowHeight = EditorConstants::DefaultEditRunProgramsWindowHeight;
     DPIAware::ConvertByCursorPosition(windowWidth, windowHeight);
     DPIAware::GetScreenDPIForCursor(g_currentDPI);
 
     // Window Creation
-    HWND _hWndEditShortcutsWindow = CreateWindow(
+    HWND _hWndEditRunProgramsWindow = CreateWindow(
         szWindowClass,
-        GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_WINDOWNAME).c_str(),
+        GET_RESOURCE_STRING(IDS_EDITRUNPROGRAMS_WINDOWNAME).c_str(),
         WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MAXIMIZEBOX,
         ((desktopRect.right + desktopRect.left) / 2) - ((int)windowWidth / 2),
         ((desktopRect.bottom + desktopRect.top) / 2) - ((int)windowHeight / 2),
@@ -114,32 +114,32 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
         NULL,
         hInst,
         NULL);
-    
-    if (_hWndEditShortcutsWindow == NULL)
+
+    if (_hWndEditRunProgramsWindow == NULL)
     {
         MessageBox(NULL, GET_RESOURCE_STRING(IDS_CREATEWINDOWFAILED_ERRORMESSAGE).c_str(), GET_RESOURCE_STRING(IDS_CREATEWINDOWFAILED_ERRORTITLE).c_str(), NULL);
         return;
     }
-    
+
     // Ensures the window is in foreground on first startup. If this is not done, the window appears behind because the thread is not on the foreground.
-    if (_hWndEditShortcutsWindow)
+    if (_hWndEditRunProgramsWindow)
     {
-        SetForegroundWindow(_hWndEditShortcutsWindow);
+        SetForegroundWindow(_hWndEditRunProgramsWindow);
     }
 
-    // Store the newly created Edit Shortcuts window's handle.
-    std::unique_lock<std::mutex> hwndLock(editShortcutsWindowMutex);
-    hwndEditShortcutsNativeWindow = _hWndEditShortcutsWindow;
+    // Store the newly created Edit RunPrograms window's handle.
+    std::unique_lock<std::mutex> hwndLock(editRunProgramsWindowMutex);
+    hwndEditRunProgramsNativeWindow = _hWndEditRunProgramsWindow;
     hwndLock.unlock();
 
     // Create the xaml bridge object
-    XamlBridge xamlBridge(_hWndEditShortcutsWindow);
-    
+    XamlBridge xamlBridge(_hWndEditRunProgramsWindow);
+
     // DesktopSource needs to be declared before the RelativePanel xamlContainer object to avoid errors
     winrt::Windows::UI::Xaml::Hosting::DesktopWindowXamlSource desktopSource;
-    
+
     // Create the desktop window xaml source object and set its content
-    hWndXamlIslandEditShortcutsWindow = xamlBridge.InitDesktopWindowsXamlSource(desktopSource);
+    hWndXamlIslandEditRunProgramsWindow = xamlBridge.InitDesktopWindowsXamlSource(desktopSource);
 
     // Set the pointer to the xaml bridge object
     xamlBridgePtr = &xamlBridge;
@@ -150,7 +150,7 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
 
     // Header text
     TextBlock headerText;
-    headerText.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_WINDOWNAME));
+    headerText.Text(GET_RESOURCE_STRING(IDS_EDITRUNPROGRAMS_WINDOWNAME));
     headerText.FontSize(30);
     headerText.Margin({ 0, 0, 0, 0 });
     header.SetAlignLeftWithPanel(headerText, true);
@@ -161,36 +161,36 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
     cancelButton.Margin({ 10, 0, 0, 0 });
     cancelButton.Click([&](winrt::Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&) {
         // Close the window since settings do not need to be saved
-        PostMessage(_hWndEditShortcutsWindow, WM_CLOSE, 0, 0);
+        PostMessage(_hWndEditRunProgramsWindow, WM_CLOSE, 0, 0);
     });
 
     //  Text block for information about remap key section.
-    TextBlock shortcutRemapInfoHeader;
-    shortcutRemapInfoHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_INFO));
-    shortcutRemapInfoHeader.Margin({ 10, 0, 0, 10 });
-    shortcutRemapInfoHeader.FontWeight(Text::FontWeights::SemiBold());
-    shortcutRemapInfoHeader.TextWrapping(TextWrapping::Wrap);
+    TextBlock runProgramRemapInfoHeader;
+    runProgramRemapInfoHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_INFO));
+    runProgramRemapInfoHeader.Margin({ 10, 0, 0, 10 });
+    runProgramRemapInfoHeader.FontWeight(Text::FontWeights::SemiBold());
+    runProgramRemapInfoHeader.TextWrapping(TextWrapping::Wrap);
 
-    TextBlock shortcutRemapInfoExample;
-    shortcutRemapInfoExample.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_INFOEXAMPLE));
-    shortcutRemapInfoExample.Margin({ 10, 0, 0, 20 });
-    shortcutRemapInfoExample.FontStyle(Text::FontStyle::Italic);
-    shortcutRemapInfoExample.TextWrapping(TextWrapping::Wrap);
+    TextBlock runProgramRemapInfoExample;
+    runProgramRemapInfoExample.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_INFOEXAMPLE));
+    runProgramRemapInfoExample.Margin({ 10, 0, 0, 20 });
+    runProgramRemapInfoExample.FontStyle(Text::FontStyle::Italic);
+    runProgramRemapInfoExample.TextWrapping(TextWrapping::Wrap);
 
-    // Table to display the shortcuts
-    StackPanel shortcutTable;
+    // Table to display the runPrograms
+    StackPanel runProgramTable;
 
-    // First header textblock in the header row of the shortcut table
-    TextBlock originalShortcutHeader;
-    originalShortcutHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_SOURCEHEADER));
-    originalShortcutHeader.FontWeight(Text::FontWeights::Bold());
+    // First header textblock in the header row of the runProgram table
+    TextBlock originalRunProgramHeader;
+    originalRunProgramHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_SOURCEHEADER));
+    originalRunProgramHeader.FontWeight(Text::FontWeights::Bold());
 
-    // Second header textblock in the header row of the shortcut table
-    TextBlock newShortcutHeader;
-    newShortcutHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_TARGETHEADER));
-    newShortcutHeader.FontWeight(Text::FontWeights::Bold());
+    // Second header textblock in the header row of the runProgram table
+    TextBlock newRunProgramHeader;
+    newRunProgramHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_TARGETHEADER));
+    newRunProgramHeader.FontWeight(Text::FontWeights::Bold());
 
-    // Third header textblock in the header row of the shortcut table
+    // Third header textblock in the header row of the runProgram table
     TextBlock targetAppHeader;
     targetAppHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_TARGETAPPHEADER));
     targetAppHeader.FontWeight(Text::FontWeights::Bold());
@@ -199,49 +199,52 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
     StackPanel tableHeader = StackPanel();
     tableHeader.Orientation(Orientation::Horizontal);
     tableHeader.Margin({ 10, 0, 0, 10 });
-    auto originalShortcutContainer = UIHelpers::GetWrapped(originalShortcutHeader, EditorConstants::ShortcutOriginColumnWidth + static_cast<double>(EditorConstants::ShortcutArrowColumnWidth));
-    tableHeader.Children().Append(originalShortcutContainer.as<FrameworkElement>());
-    auto newShortcutHeaderContainer = UIHelpers::GetWrapped(newShortcutHeader, EditorConstants::ShortcutTargetColumnWidth);
-    tableHeader.Children().Append(newShortcutHeaderContainer.as<FrameworkElement>());
+    auto originalRunProgramContainer = UIHelpers::GetWrapped(originalRunProgramHeader, EditorConstants::RunProgramOriginColumnWidth + static_cast<double>(EditorConstants::RunProgramArrowColumnWidth));
+    tableHeader.Children().Append(originalRunProgramContainer.as<FrameworkElement>());
+    auto newRunProgramHeaderContainer = UIHelpers::GetWrapped(newRunProgramHeader, EditorConstants::RunProgramTargetColumnWidth);
+    tableHeader.Children().Append(newRunProgramHeaderContainer.as<FrameworkElement>());
     tableHeader.Children().Append(targetAppHeader);
 
-    // Store handle of edit shortcuts window
-    ShortcutControl::editShortcutsWindowHandle = _hWndEditShortcutsWindow;
-    
+    // Store handle of edit runPrograms window
+    RunProgramControl::editRunProgramsWindowHandle = _hWndEditRunProgramsWindow;
+
     // Store keyboard manager state
-    ShortcutControl::keyboardManagerState = &keyboardManagerState;
+    RunProgramControl::keyboardManagerState = &keyboardManagerState;
     KeyDropDownControl::keyboardManagerState = &keyboardManagerState;
     KeyDropDownControl::mappingConfiguration = &mappingConfiguration;
-    
-    // Clear the shortcut remap buffer
-    ShortcutControl::shortcutRemapBuffer.clear();
-    
+
+    // Clear the runProgram remap buffer
+    RunProgramControl::runProgramRemapBuffer.clear();
+
     // Vector to store dynamically allocated control objects to avoid early destruction
-    std::vector<std::vector<std::unique_ptr<ShortcutControl>>> keyboardRemapControlObjects;
+    std::vector<std::vector<std::unique_ptr<RunProgramControl>>> keyboardRemapControlObjects;
 
-    // Set keyboard manager UI state so that shortcut remaps are not applied while on this window
-    keyboardManagerState.SetUIState(KBMEditor::KeyboardManagerUIState::EditShortcutsWindowActivated, _hWndEditShortcutsWindow);
+    // Set keyboard manager UI state so that runProgram remaps are not applied while on this window
+    keyboardManagerState.SetUIState(KBMEditor::KeyboardManagerUIState::RunProgramsWindowActivated, _hWndEditRunProgramsWindow);
 
-    // Load existing os level shortcuts into UI
+    // Load existing os level runPrograms into UI
     // Create copy of the remaps to avoid concurrent access
-    ShortcutRemapTable osLevelShortcutReMapCopy = mappingConfiguration.osLevelShortcutReMap;
-    
-    for (const auto& it : osLevelShortcutReMapCopy)
-    {
-        ShortcutControl::AddNewShortcutControlRow(shortcutTable, keyboardRemapControlObjects, it.first, it.second.targetShortcut);
-    }
+    // RunProgramRemapTable osLevelRunProgramReMapCopy = mappingConfiguration.osLevelRunProgramReMap;
 
-    // Load existing app-specific shortcuts into UI
+    //// Add all
+    //for (const auto& it : osLevelRunProgramReMapCopy)
+    //{
+    //    // TODO: JLO FIX targetShortcut
+    //    RunProgramControl::AddNewRunProgramControlRow(runProgramTable, keyboardRemapControlObjects, it.first, it.second.targetShortcut);
+    //}
+
+    // Load existing app-specific runPrograms into UI
     // Create copy of the remaps to avoid concurrent access
-    AppSpecificShortcutRemapTable appSpecificShortcutReMapCopy = mappingConfiguration.appSpecificShortcutReMap;
+    //AppSpecificShortcutRemapTable appSpecificRunProgramReMapCopy = mappingConfiguration.appSpecificShortcutReMap;
+    AppSpecificShortcutRemapTable appSpecificRunProgramReMapCopy = mappingConfiguration.appSpecificRunProgramReMap;
 
     // Iterate through all the apps
-    for (const auto& itApp : appSpecificShortcutReMapCopy)
+    for (const auto& itApp : appSpecificRunProgramReMapCopy)
     {
-        // Iterate through shortcuts for each app
-        for (const auto& itShortcut : itApp.second)
+        // Iterate through runPrograms for each app
+        for (const auto& itRunProgram : itApp.second)
         {
-            ShortcutControl::AddNewShortcutControlRow(shortcutTable, keyboardRemapControlObjects, itShortcut.first, itShortcut.second.targetShortcut, itApp.first);
+            RunProgramControl::AddNewRunProgramControlRow(runProgramTable, keyboardRemapControlObjects, itRunProgram.first, itRunProgram.second.targetShortcut, itApp.first);
         }
     }
 
@@ -254,10 +257,12 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
     header.SetAlignRightWithPanel(cancelButton, true);
     header.SetLeftOf(applyButton, cancelButton);
 
-    auto ApplyRemappings = [&mappingConfiguration, _hWndEditShortcutsWindow]() {
-        LoadingAndSavingRemappingHelper::ApplyShortcutRemappings(mappingConfiguration, ShortcutControl::shortcutRemapBuffer, true);
+    auto ApplyRemappings = [&mappingConfiguration, _hWndEditRunProgramsWindow]() {
+        //LoadingAndSavingRemappingHelper::ApplyRunProgramRemappings(mappingConfiguration, RunProgramControl::runProgramRemapBuffer, true);
+        LoadingAndSavingRemappingHelper::ApplyShortcutRemappings(mappingConfiguration, RunProgramControl::runProgramRemapBuffer, true);
+
         bool saveResult = mappingConfiguration.SaveSettingsToFile();
-        PostMessage(_hWndEditShortcutsWindow, WM_CLOSE, 0, 0);
+        PostMessage(_hWndEditRunProgramsWindow, WM_CLOSE, 0, 0);
     };
 
     applyButton.Click([&keyboardManagerState, applyButton, ApplyRemappings](winrt::Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&) {
@@ -274,41 +279,41 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
     scrollViewer.VerticalScrollBarVisibility(ScrollBarVisibility::Auto);
     scrollViewer.HorizontalScrollBarVisibility(ScrollBarVisibility::Auto);
 
-    // Add shortcut button
-    Windows::UI::Xaml::Controls::Button addShortcut;
+    // Add runProgram button
+    Windows::UI::Xaml::Controls::Button addRunProgram;
     FontIcon plusSymbol;
     plusSymbol.FontFamily(Xaml::Media::FontFamily(L"Segoe MDL2 Assets"));
     plusSymbol.Glyph(L"\xE710");
-    addShortcut.Content(plusSymbol);
-    addShortcut.Margin({ 10, 10, 0, 25 });
-    addShortcut.Click([&](winrt::Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&) {
-        ShortcutControl::AddNewShortcutControlRow(shortcutTable, keyboardRemapControlObjects);
+    addRunProgram.Content(plusSymbol);
+    addRunProgram.Margin({ 10, 10, 0, 25 });
+    addRunProgram.Click([&](winrt::Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&) {
+        RunProgramControl::AddNewRunProgramControlRow(runProgramTable, keyboardRemapControlObjects);
 
         // Whenever a remap is added move to the bottom of the screen
         scrollViewer.ChangeView(nullptr, scrollViewer.ScrollableHeight(), nullptr);
 
         // Set focus to the first Type Button in the newly added row
-        UIHelpers::SetFocusOnTypeButtonInLastRow(shortcutTable, EditorConstants::ShortcutTableColCount);
+        UIHelpers::SetFocusOnTypeButtonInLastRow(runProgramTable, EditorConstants::RunProgramTableColCount);
     });
 
-    // Set accessible name for the add shortcut button
-    addShortcut.SetValue(Automation::AutomationProperties::NameProperty(), box_value(GET_RESOURCE_STRING(IDS_ADD_SHORTCUT_BUTTON)));
+    // Set accessible name for the add runProgram button
+    addRunProgram.SetValue(Automation::AutomationProperties::NameProperty(), box_value(GET_RESOURCE_STRING(IDS_ADD_SHORTCUT_BUTTON)));
 
     // Add tooltip for add button which would appear on hover
-    ToolTip addShortcuttoolTip;
-    addShortcuttoolTip.Content(box_value(GET_RESOURCE_STRING(IDS_ADD_SHORTCUT_BUTTON)));
-    ToolTipService::SetToolTip(addShortcut, addShortcuttoolTip);
+    ToolTip addRunProgramtoolTip;
+    addRunProgramtoolTip.Content(box_value(GET_RESOURCE_STRING(IDS_ADD_SHORTCUT_BUTTON)));
+    ToolTipService::SetToolTip(addRunProgram, addRunProgramtoolTip);
 
     // Header and example text at the top of the window
     StackPanel helperText;
-    helperText.Children().Append(shortcutRemapInfoHeader);
-    helperText.Children().Append(shortcutRemapInfoExample);
+    helperText.Children().Append(runProgramRemapInfoHeader);
+    helperText.Children().Append(runProgramRemapInfoExample);
 
     // Remapping table
     StackPanel mappingsPanel;
     mappingsPanel.Children().Append(tableHeader);
-    mappingsPanel.Children().Append(shortcutTable);
-    mappingsPanel.Children().Append(addShortcut);
+    mappingsPanel.Children().Append(runProgramTable);
+    mappingsPanel.Children().Append(addRunProgram);
 
     // Remapping table should be scrollable
     scrollViewer.Content(mappingsPanel);
@@ -337,10 +342,10 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
     desktopSource.Content(xamlContainer);
 
     ////End XAML Island section
-    if (_hWndEditShortcutsWindow)
+    if (_hWndEditRunProgramsWindow)
     {
-        ShowWindow(_hWndEditShortcutsWindow, SW_SHOW);
-        UpdateWindow(_hWndEditShortcutsWindow);
+        ShowWindow(_hWndEditRunProgramsWindow, SW_SHOW);
+        UpdateWindow(_hWndEditRunProgramsWindow);
     }
 
     // Message loop:
@@ -348,9 +353,9 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
 
     // Reset pointers to nullptr
     xamlBridgePtr = nullptr;
-    hWndXamlIslandEditShortcutsWindow = nullptr;
+    hWndXamlIslandEditRunProgramsWindow = nullptr;
     hwndLock.lock();
-    hwndEditShortcutsNativeWindow = nullptr;
+    hwndEditRunProgramsNativeWindow = nullptr;
     keyboardManagerState.ResetUIState();
     keyboardManagerState.ClearRegisteredKeyDelays();
 
@@ -358,10 +363,10 @@ inline void CreateEditShortcutsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMa
     xamlBridge.ClearXamlIslands();
 }
 
-void CreateEditShortcutsWindow(HINSTANCE hInst, KBMEditor::KeyboardManagerState& keyboardManagerState, MappingConfiguration& mappingConfiguration)
+void CreateEditRunProgramsWindow(HINSTANCE hInst, KBMEditor::KeyboardManagerState& keyboardManagerState, MappingConfiguration& mappingConfiguration)
 {
     // Move implementation into the separate method so resources get destroyed correctly
-    CreateEditShortcutsWindowImpl(hInst, keyboardManagerState, mappingConfiguration);
+    CreateEditRunProgramsWindowImpl(hInst, keyboardManagerState, mappingConfiguration);
 
     // Calling ClearXamlIslands() outside of the message loop is not enough to prevent
     // Microsoft.UI.XAML.dll from crashing during deinitialization, see https://github.com/microsoft/PowerToys/issues/10906
@@ -370,7 +375,7 @@ void CreateEditShortcutsWindow(HINSTANCE hInst, KBMEditor::KeyboardManagerState&
     TerminateProcess(GetCurrentProcess(), 0);
 }
 
-LRESULT CALLBACK EditShortcutsWindowProc(HWND hWnd, UINT messageCode, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK EditRunProgramsWindowProc(HWND hWnd, UINT messageCode, WPARAM wParam, LPARAM lParam)
 {
     switch (messageCode)
     {
@@ -380,15 +385,15 @@ LRESULT CALLBACK EditShortcutsWindowProc(HWND hWnd, UINT messageCode, WPARAM wPa
     {
         RECT rect = { 0 };
         GetClientRect(hWnd, &rect);
-        SetWindowPos(hWndXamlIslandEditShortcutsWindow, 0, rect.left, rect.top, rect.right, rect.bottom, SWP_SHOWWINDOW);
+        SetWindowPos(hWndXamlIslandEditRunProgramsWindow, 0, rect.left, rect.top, rect.right, rect.bottom, SWP_SHOWWINDOW);
     }
     break;
     // To avoid UI elements overlapping on making the window smaller enforce a minimum window size
     case WM_GETMINMAXINFO:
     {
         LPMINMAXINFO mmi = reinterpret_cast<LPMINMAXINFO>(lParam);
-        float minWidth = EditorConstants::MinimumEditShortcutsWindowWidth;
-        float minHeight = EditorConstants::MinimumEditShortcutsWindowHeight;
+        float minWidth = EditorConstants::MinimumEditRunProgramsWindowWidth;
+        float minHeight = EditorConstants::MinimumEditRunProgramsWindowHeight;
         DPIAware::Convert(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONULL), minWidth, minHeight);
         mmi->ptMinTrackSize.x = static_cast<LONG>(minWidth);
         mmi->ptMinTrackSize.y = static_cast<LONG>(minHeight);
@@ -422,8 +427,7 @@ LRESULT CALLBACK EditShortcutsWindowProc(HWND hWnd, UINT messageCode, WPARAM wPa
             rect->top,
             rect->right - rect->left,
             rect->bottom - rect->top,
-            SWP_NOZORDER | SWP_NOACTIVATE
-        );
+            SWP_NOZORDER | SWP_NOACTIVATE);
 
         Logger::trace(L"WM_DPICHANGED: new dpi {} rect {} {} ", newDPI, rect->right - rect->left, rect->bottom - rect->top);
     }
@@ -447,32 +451,32 @@ LRESULT CALLBACK EditShortcutsWindowProc(HWND hWnd, UINT messageCode, WPARAM wPa
 }
 
 // Function to check if there is already a window active if yes bring to foreground
-bool CheckEditShortcutsWindowActive()
+bool CheckEditRunProgramsWindowActive()
 {
     bool result = false;
-    std::unique_lock<std::mutex> hwndLock(editShortcutsWindowMutex);
-    if (hwndEditShortcutsNativeWindow != nullptr)
+    std::unique_lock<std::mutex> hwndLock(editRunProgramsWindowMutex);
+    if (hwndEditRunProgramsNativeWindow != nullptr)
     {
         // Check if the window is minimized if yes then restore the window.
-        if (IsIconic(hwndEditShortcutsNativeWindow))
+        if (IsIconic(hwndEditRunProgramsNativeWindow))
         {
-            ShowWindow(hwndEditShortcutsNativeWindow, SW_RESTORE);
+            ShowWindow(hwndEditRunProgramsNativeWindow, SW_RESTORE);
         }
 
         // If there is an already existing window no need to create a new open bring it on foreground.
-        SetForegroundWindow(hwndEditShortcutsNativeWindow);
+        SetForegroundWindow(hwndEditRunProgramsNativeWindow);
         result = true;
     }
 
     return result;
 }
 
-// Function to close any active Edit Shortcuts window
-void CloseActiveEditShortcutsWindow()
+// Function to close any active Edit RunPrograms window
+void CloseActiveEditRunProgramsWindow()
 {
-    std::unique_lock<std::mutex> hwndLock(editShortcutsWindowMutex);
-    if (hwndEditShortcutsNativeWindow != nullptr)
+    std::unique_lock<std::mutex> hwndLock(editRunProgramsWindowMutex);
+    if (hwndEditRunProgramsNativeWindow != nullptr)
     {
-        PostMessage(hwndEditShortcutsNativeWindow, WM_CLOSE, 0, 0);
+        PostMessage(hwndEditRunProgramsNativeWindow, WM_CLOSE, 0, 0);
     }
 }

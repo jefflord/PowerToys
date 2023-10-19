@@ -10,9 +10,47 @@
 #include "keyboardmanager/KeyboardManagerEditorLibrary/trace.h"
 #include "EditorHelpers.h"
 #include "ShortcutErrorType.h"
+#include "RunProgramErrorType.h"
 
 namespace LoadingAndSavingRemappingHelper
 {
+    // Function to check if the set of run-programs in the buffer are valid
+    RunProgramErrorType CheckIfRunProgramsAreValid(const RemapBuffer& remappings)
+    {
+        RunProgramErrorType isSuccess = RunProgramErrorType::NoError;
+        std::map<std::wstring, std::set<KeyShortcutUnion>> ogKeys;
+        for (int i = 0; i < remappings.size(); i++)
+        {
+            KeyShortcutUnion ogKey = remappings[i].first[0];
+            KeyShortcutUnion newKey = remappings[i].first[1];
+            std::wstring appName = remappings[i].second;
+
+            bool ogKeyValidity = (ogKey.index() == 0 && std::get<DWORD>(ogKey) != NULL) || (ogKey.index() == 1 && EditorHelpers::IsValidShortcut(std::get<Shortcut>(ogKey)));
+            bool newKeyValidity = (newKey.index() == 0 && std::get<DWORD>(newKey) != NULL) || (newKey.index() == 1 && EditorHelpers::IsValidShortcut(std::get<Shortcut>(newKey)));
+
+            // Add new set for a new target app name
+            if (ogKeys.find(appName) == ogKeys.end())
+            {
+                ogKeys[appName] = std::set<KeyShortcutUnion>();
+            }
+
+            if (ogKeyValidity && newKeyValidity && ogKeys[appName].find(ogKey) == ogKeys[appName].end())
+            {
+                ogKeys[appName].insert(ogKey);
+            }
+            else if (ogKeyValidity && newKeyValidity && ogKeys[appName].find(ogKey) != ogKeys[appName].end())
+            {
+                isSuccess = RunProgramErrorType::RemapUnsuccessful;
+            }
+            else
+            {
+                isSuccess = RunProgramErrorType::RemapUnsuccessful;
+            }
+        }
+
+        return isSuccess;
+    }
+
     // Function to check if the set of remappings in the buffer are valid
     ShortcutErrorType CheckIfRemappingsAreValid(const RemapBuffer& remappings)
     {
@@ -175,6 +213,64 @@ namespace LoadingAndSavingRemappingHelper
         }
     }
 
+    // Function to apply the RunProgram remappings from the buffer to the KeyboardManagerState variable
+    void ApplyRunProgramRemappings(MappingConfiguration& mappingConfiguration, const RemapBuffer& remappings, bool isTelemetryRequired)
+    {
+        // Clear existing RunPrograms
+        mappingConfiguration.ClearOSLevelShortcuts();        
+        DWORD successfulOSLevelRunProgramToRunProgramRemapCount = 0;
+        DWORD successfulOSLevelRunProgramToKeyRemapCount = 0;
+        DWORD successfulAppSpecificRunProgramToRunProgramRemapCount = 0;
+        DWORD successfulAppSpecificRunProgramToKeyRemapCount = 0;
+
+        // Save the RunPrograms that are valid and report if any of them were invalid
+        for (int i = 0; i < remappings.size(); i++)
+        {
+            Shortcut originalRunProgram = std::get<Shortcut>(remappings[i].first[0]);
+            KeyShortcutUnion newRunProgram = remappings[i].first[1];
+
+            if (EditorHelpers::IsValidShortcut(originalRunProgram) && ((newRunProgram.index() == 0 && std::get<DWORD>(newRunProgram) != NULL) || (newRunProgram.index() == 1 && EditorHelpers::IsValidShortcut(std::get<Shortcut>(newRunProgram)))))
+            {
+                if (remappings[i].second == L"")
+                {
+                    bool result = mappingConfiguration.AddOSLevelShortcut(originalRunProgram, newRunProgram);
+                    if (result)
+                    {
+                        if (newRunProgram.index() == 0)
+                        {
+                            successfulOSLevelRunProgramToKeyRemapCount += 1;
+                        }
+                        else
+                        {
+                            successfulOSLevelRunProgramToRunProgramRemapCount += 1;
+                        }
+                    }
+                }
+                else
+                {
+                    bool result = mappingConfiguration.AddAppSpecificShortcut(remappings[i].second, originalRunProgram, newRunProgram);
+                    if (result)
+                    {
+                        if (newRunProgram.index() == 0)
+                        {
+                            successfulAppSpecificRunProgramToKeyRemapCount += 1;
+                        }
+                        else
+                        {
+                            successfulAppSpecificRunProgramToRunProgramRemapCount += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // If telemetry is to be logged, log the RunProgram remap counts
+        if (isTelemetryRequired)
+        {
+            Trace::OSLevelShortcutRemapCount(successfulOSLevelRunProgramToRunProgramRemapCount, successfulOSLevelRunProgramToKeyRemapCount);            
+        }
+    }
+
     // Function to apply the shortcut remappings from the buffer to the KeyboardManagerState variable
     void ApplyShortcutRemappings(MappingConfiguration& mappingConfiguration, const RemapBuffer& remappings, bool isTelemetryRequired)
     {
@@ -185,7 +281,7 @@ namespace LoadingAndSavingRemappingHelper
         DWORD successfulOSLevelShortcutToKeyRemapCount = 0;
         DWORD successfulAppSpecificShortcutToShortcutRemapCount = 0;
         DWORD successfulAppSpecificShortcutToKeyRemapCount = 0;
-        
+
         // Save the shortcuts that are valid and report if any of them were invalid
         for (int i = 0; i < remappings.size(); i++)
         {

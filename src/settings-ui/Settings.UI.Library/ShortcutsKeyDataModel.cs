@@ -19,10 +19,14 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         [JsonPropertyName("appSpecific")]
         public List<AppSpecificKeysDataModel> AppSpecificRemapShortcuts { get; set; }
 
+        [JsonPropertyName("runProgram")]
+        public List<AppSpecificKeysDataModel> RunProgramShortcuts { get; set; }
+
         public ShortcutsKeyDataModel()
         {
             GlobalRemapShortcuts = new List<KeysDataModel>();
             AppSpecificRemapShortcuts = new List<AppSpecificKeysDataModel>();
+            RunProgramShortcuts = new List<AppSpecificKeysDataModel>();
         }
 
         public string ToJsonString()

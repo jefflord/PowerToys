@@ -285,7 +285,7 @@ inline void CreateEditKeyboardWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardMan
     SingleKeyRemapTable singleKeyRemapCopy = mappingConfiguration.singleKeyReMap;
 
     LoadingAndSavingRemappingHelper::PreProcessRemapTable(singleKeyRemapCopy);
-
+    
     for (const auto& it : singleKeyRemapCopy)
     {
         SingleKeyRemapControl::AddNewControlKeyRemapRow(keyRemapTable, keyboardRemapControlObjects, it.first, it.second);

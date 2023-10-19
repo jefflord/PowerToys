@@ -144,6 +144,9 @@
   <data name="EditShortcuts_WindowName" xml:space="preserve">
     <value>Remap shortcuts</value>
   </data>
+  <data name="EditRunPrograms_WindowName" xml:space="preserve">
+    <value>Run program shortcuts</value>
+  </data>	
   <data name="Ok_Button" xml:space="preserve">
     <value>OK</value>
   </data>

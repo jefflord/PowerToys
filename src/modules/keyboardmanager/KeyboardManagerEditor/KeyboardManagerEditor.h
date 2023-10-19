@@ -9,6 +9,7 @@ enum class KeyboardManagerEditorType
 {
     KeyEditor = 0,
     ShortcutEditor,
+    RunProgramEditor,
 };
 
 class KeyboardManagerEditor

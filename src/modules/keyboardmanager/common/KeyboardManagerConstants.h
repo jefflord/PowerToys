@@ -28,6 +28,9 @@ namespace KeyboardManagerConstants
     // Name of the property use to store app specific shortcut remaps array.
     inline const std::wstring AppSpecificRemapShortcutsSettingName = L"appSpecific";
 
+    // Name of the property use to store app specific shortcut remaps array.
+    inline const std::wstring AppSpecificRemapRunProgramsSettingName = L"runProgram";
+
     // Name of the property use to store original keys.
     inline const std::wstring OriginalKeysSettingName = L"originalKeys";
 

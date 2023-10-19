@@ -75,6 +75,15 @@
     <ClInclude Include="EditorConstants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="EditRunProgramsWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RunProgramControl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RunProgramErrorType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -126,6 +135,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="KeyDelay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EditRunProgramsWindow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RunProgramControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

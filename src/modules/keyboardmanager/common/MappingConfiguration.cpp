@@ -17,7 +17,6 @@ void MappingConfiguration::ClearOSLevelShortcuts()
     osLevelShortcutReMapSortedKeys.clear();
 }
 
-
 // Function to clear the Keys remapping table.
 void MappingConfiguration::ClearSingleKeyRemaps()
 {
@@ -30,6 +29,13 @@ void MappingConfiguration::ClearAppSpecificShortcuts()
     appSpecificShortcutReMap.clear();
     appSpecificShortcutReMapSortedKeys.clear();
 }
+
+void MappingConfiguration::ClearAppSpecificRunProgram()
+{
+    appSpecificRunProgramReMap.clear();
+    appSpecificRunProgramReMapSortedKeys.clear();
+}
+//
 
 // Function to add a new OS level shortcut remapping
 bool MappingConfiguration::AddOSLevelShortcut(const Shortcut& originalSC, const KeyShortcutUnion& newSC)
@@ -92,6 +98,34 @@ bool MappingConfiguration::AddAppSpecificShortcut(const std::wstring& app, const
     return true;
 }
 
+bool MappingConfiguration::AddAppSpecificRunProgram(const std::wstring& app, const Shortcut& originalSC, const KeyShortcutUnion& newSC)
+{
+    // Convert app name to lower case
+    std::wstring process_name;
+    process_name.resize(app.length());
+    std::transform(app.begin(), app.end(), process_name.begin(), towlower);
+
+    // Check if there are any app specific shortcuts for this app
+    auto appIt = appSpecificRunProgramReMap.find(process_name);
+    if (appIt != appSpecificRunProgramReMap.end())
+    {
+        // Check if the shortcut is already remapped
+        auto shortcutIt = appSpecificRunProgramReMap[process_name].find(originalSC);
+        if (shortcutIt != appSpecificRunProgramReMap[process_name].end())
+        {
+            return false;
+        }
+    }
+    else
+    {
+        appSpecificRunProgramReMapSortedKeys[process_name] = std::vector<Shortcut>();
+    }
+
+    appSpecificRunProgramReMap[process_name][originalSC] = RemapShortcut(newSC);
+    appSpecificRunProgramReMapSortedKeys[process_name].push_back(originalSC);
+    Helpers::SortShortcutVectorBasedOnSize(appSpecificRunProgramReMapSortedKeys[process_name]);
+    return true;
+}
 
 bool MappingConfiguration::LoadSingleKeyRemaps(const json::JsonObject& jsonData)
 {
@@ -184,6 +218,39 @@ bool MappingConfiguration::LoadAppSpecificShortcutRemaps(const json::JsonObject&
     return result;
 }
 
+bool MappingConfiguration::LoadRunProgramRemaps(const json::JsonObject& remapShortcutsData)
+{
+    bool result = true;
+
+    try
+    {
+        auto appSpecificRemapShortcuts = remapShortcutsData.GetNamedArray(KeyboardManagerConstants::AppSpecificRemapRunProgramsSettingName);
+        for (const auto& it : appSpecificRemapShortcuts)
+        {
+            try
+            {
+                auto originalKeys = it.GetObjectW().GetNamedString(KeyboardManagerConstants::OriginalKeysSettingName);
+                auto newRemapKeys = it.GetObjectW().GetNamedString(KeyboardManagerConstants::NewRemapKeysSettingName);
+                auto targetApp = it.GetObjectW().GetNamedString(KeyboardManagerConstants::TargetAppSettingName);
+
+                AddAppSpecificRunProgram(targetApp.c_str(), Shortcut(originalKeys.c_str()), Shortcut(newRemapKeys.c_str()));
+            }
+            catch (...)
+            {
+                Logger::error(L"Improper Key Data JSON. Try the next shortcut.");
+                result = false;
+            }
+        }
+    }
+    catch (...)
+    {
+        Logger::error(L"Improper JSON format for os level shortcut remaps. Skip to next remap type");
+        result = false;
+    }
+
+    return result;
+}
+
 bool MappingConfiguration::LoadShortcutRemaps(const json::JsonObject& jsonData)
 {
     bool result = true;
@@ -193,6 +260,8 @@ bool MappingConfiguration::LoadShortcutRemaps(const json::JsonObject& jsonData)
         auto remapShortcutsData = jsonData.GetNamedObject(KeyboardManagerConstants::RemapShortcutsSettingName);
         ClearOSLevelShortcuts();
         ClearAppSpecificShortcuts();
+        ClearAppSpecificRunProgram();
+
         if (remapShortcutsData)
         {
             // Load os level shortcut remaps
@@ -233,6 +302,7 @@ bool MappingConfiguration::LoadShortcutRemaps(const json::JsonObject& jsonData)
 
             // Load app specific shortcut remaps
             result = result && LoadAppSpecificShortcutRemaps(remapShortcutsData);
+            result = result && LoadRunProgramRemaps(remapShortcutsData);
         }
     }
     catch (...)
@@ -292,6 +362,7 @@ bool MappingConfiguration::SaveSettingsToFile()
     json::JsonObject remapKeys;
     json::JsonArray inProcessRemapKeysArray;
     json::JsonArray appSpecificRemapShortcutsArray;
+    json::JsonArray appSpecificRemapRunProgramsArray;
     json::JsonArray globalRemapShortcutsArray;
     for (const auto& it : singleKeyReMap)
     {
@@ -359,8 +430,35 @@ bool MappingConfiguration::SaveSettingsToFile()
         }
     }
 
+    for (const auto& itApp : appSpecificRunProgramReMap)
+    {
+        // Iterate over apps
+        for (const auto& itKeys : itApp.second)
+        {
+            json::JsonObject keys;
+            keys.SetNamedValue(KeyboardManagerConstants::OriginalKeysSettingName, json::value(itKeys.first.ToHstringVK()));
+
+            // For shortcut to key remapping
+            if (itKeys.second.targetShortcut.index() == 0)
+            {
+                keys.SetNamedValue(KeyboardManagerConstants::NewRemapKeysSettingName, json::value(winrt::to_hstring((unsigned int)std::get<DWORD>(itKeys.second.targetShortcut))));
+            }
+
+            // For shortcut to shortcut remapping
+            else
+            {
+                keys.SetNamedValue(KeyboardManagerConstants::NewRemapKeysSettingName, json::value(std::get<Shortcut>(itKeys.second.targetShortcut).ToHstringVK()));
+            }
+
+            keys.SetNamedValue(KeyboardManagerConstants::TargetAppSettingName, json::value(itApp.first));
+
+            appSpecificRemapRunProgramsArray.Append(keys);
+        }
+    }
+
     remapShortcuts.SetNamedValue(KeyboardManagerConstants::GlobalRemapShortcutsSettingName, globalRemapShortcutsArray);
     remapShortcuts.SetNamedValue(KeyboardManagerConstants::AppSpecificRemapShortcutsSettingName, appSpecificRemapShortcutsArray);
+    remapShortcuts.SetNamedValue(KeyboardManagerConstants::AppSpecificRemapRunProgramsSettingName, appSpecificRemapRunProgramsArray);
     remapKeys.SetNamedValue(KeyboardManagerConstants::InProcessRemapKeysSettingName, inProcessRemapKeysArray);
     configJson.SetNamedValue(KeyboardManagerConstants::RemapKeysSettingName, remapKeys);
     configJson.SetNamedValue(KeyboardManagerConstants::RemapShortcutsSettingName, remapShortcuts);
