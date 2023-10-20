@@ -187,7 +187,7 @@
 
                 <custom:SettingsGroup x:Uid="KeyboardManager_RunProgram" IsEnabled="{x:Bind Mode=OneWay, Path=ViewModel.Enabled}">
                     <controls:SettingsCard
-                        x:Uid="KeyboardManager_RemapRunProgramsButton"
+                        x:Uid="KeyboardManager_RemapRunProgramButton"
                         ActionIcon="{ui:FontIcon FontSize=14,
                                                  Glyph=&#xE8A7;}"
                         Command="{Binding Path=EditRunProgramCommand}"
@@ -216,23 +216,11 @@
                                             </ItemsControl.ItemsPanel>
                                         </ItemsControl>
                                         <custom:IsEnabledTextBlock
-                                            x:Uid="To"
+                                            x:Uid="WillStart"
                                             Margin="8,0,8,0"
                                             VerticalAlignment="Center"
                                             Style="{StaticResource SecondaryIsEnabledTextBlockStyle}" />
-
-                                        <!--<ItemsControl
-                                            Name="KeyboardManager_RemappedTo"
-                                            x:Uid="KeyboardManager_RemappedTo"
-                                            IsTabStop="False"
-                                            ItemTemplate="{StaticResource RemappedKeyTemplate}"
-                                            ItemsSource="{x:Bind GetMappedNewRemapKeys()}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <StackPanel Orientation="Horizontal" Spacing="4" />
-                                                </ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                        </ItemsControl>-->
+                                        
                                         <Border
                                             Margin="16,0,0,0"
                                             Padding="12,4,12,6"

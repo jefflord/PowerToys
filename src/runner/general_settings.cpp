@@ -159,14 +159,17 @@ void apply_general_settings(const json::JsonObject& general_configs, bool save)
                 target_enabled = gpo_rule == powertoys_gpo::gpo_rule_configured_enabled;
             }
 
-            if (name != L"Keyboard Manager")
+            if (module_inst_enabled == target_enabled)
             {
-                if (module_inst_enabled == target_enabled)
+                if (name == L"Keyboard Manager" && target_enabled)
                 {
-                    continue;
+                    // No state change, but KBM is still enabled, sync the hotkey state with the module state, so it can be removed for disabled modules.
+                    powertoy.add_run_program_shortcuts();
+                    powertoy.UpdateHotkeyEx();
                 }
+                continue;
             }
-            
+
             if (target_enabled)
             {
                 Logger::info(L"apply_general_settings: Enabling powertoy {}", name);

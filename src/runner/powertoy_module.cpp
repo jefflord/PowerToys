@@ -9,6 +9,9 @@
 #include <common/SettingsAPI/settings_helpers.h>
 #include <modules/keyboardmanager/common/Shortcut.h>
 #include <modules/keyboardmanager/common/RemapShortcut.h>
+//#include <modules/keyboardmanager/common/RunProgramSpec.h>
+//#include <modules/keyboardmanager/common/RunProgramSpec2.h>
+//#include "modules/keyboardmanager/common/RunProgramSpec2.h"
 #include <modules/keyboardmanager/common/KeyboardManagerConstants.h>
 #include <common/interop/shared_constants.h>
 
@@ -18,7 +21,8 @@ std::map<std::wstring, PowertoyModule>& modules()
     return modules;
 }
 
-class RunProgramSpec
+
+class RunProgramSpec2
 {
 public:
     ModifierKey winKey = ModifierKey::Disabled;
@@ -30,7 +34,7 @@ public:
     std::wstring path = L"";
     std::vector<DWORD> keys;
 
-    RunProgramSpec(const std::wstring& shortcutVK) :
+    RunProgramSpec2(const std::wstring& shortcutVK) :
         winKey(ModifierKey::Disabled), ctrlKey(ModifierKey::Disabled), altKey(ModifierKey::Disabled), shiftKey(ModifierKey::Disabled), actionKey(NULL)
     {
         auto _keys = splitwstring(shortcutVK, ';');
@@ -270,7 +274,7 @@ void PowertoyModule::add_run_program_shortcuts()
 
                     auto path = it.GetObjectW().GetNamedString(L"targetApp");
 
-                    auto runProgramSpec = RunProgramSpec(originalKeys.c_str());
+                    auto runProgramSpec = RunProgramSpec2(originalKeys.c_str());
 
                     // auto isChord = it.GetObjectW().GetNamedBoolean(L"isChord");
                     hotkey.win = (runProgramSpec.winKey == ModifierKey::Left || runProgramSpec.winKey == ModifierKey::Right);

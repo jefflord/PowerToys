@@ -146,8 +146,11 @@
   </data>
   <data name="EditRunPrograms_WindowName" xml:space="preserve">
     <value>Run program shortcuts</value>
-  </data>	
-  <data name="Ok_Button" xml:space="preserve">
+  </data>
+  <data name="EditRunPrograms_ProgramName" xml:space="preserve">
+    <value>Program name</value>
+  </data>
+	<data name="Ok_Button" xml:space="preserve">
     <value>OK</value>
   </data>
   <data name="Cancel_Button" xml:space="preserve">
@@ -169,6 +172,9 @@
   <data name="EditShortcuts_TargetAppHeader" xml:space="preserve">
     <value>Target app:</value>
   </data>
+  <data name="EditShortcuts_RunProgramAppHeader" xml:space="preserve">
+    <value>Program:</value>
+  </data>	
   <data name="EditKeyboard_OrphanedDialogTitle" xml:space="preserve">
     <value>Warning: The following keys do not have assignments:</value>
     <comment>Key on a keyboard</comment>

@@ -9,6 +9,8 @@
 #include <common/SettingsAPI/settings_helpers.h>
 #include <modules/keyboardmanager/common/Shortcut.h>
 #include <modules/keyboardmanager/common/RemapShortcut.h>
+//#include <modules/keyboardmanager/common/RunProgramSpec.h>
+#include "modules/keyboardmanager/common/RunProgramSpec2.h"
 #include <modules/keyboardmanager/common/KeyboardManagerConstants.h>
 
 namespace CentralizedKeyboardHook
@@ -218,156 +220,156 @@ namespace CentralizedKeyboardHook
         return CallNextHookEx(hHook, nCode, wParam, lParam);
     }
 
-    class RunProgramSpec
-    {
-    public:
-        ModifierKey winKey = ModifierKey::Disabled;
-        ModifierKey ctrlKey = ModifierKey::Disabled;
-        ModifierKey altKey = ModifierKey::Disabled;
-        ModifierKey shiftKey = ModifierKey::Disabled;
-        DWORD actionKey = {};
+    //class RunProgramSpec2
+    //{
+    //public:
+    //    ModifierKey winKey = ModifierKey::Disabled;
+    //    ModifierKey ctrlKey = ModifierKey::Disabled;
+    //    ModifierKey altKey = ModifierKey::Disabled;
+    //    ModifierKey shiftKey = ModifierKey::Disabled;
+    //    DWORD actionKey = {};
 
-        std::wstring path = L"";
-        std::vector<DWORD> keys;
+    //    std::wstring path = L"";
+    //    std::vector<DWORD> keys;
 
-        RunProgramSpec(const std::wstring& shortcutVK) :
-            winKey(ModifierKey::Disabled), ctrlKey(ModifierKey::Disabled), altKey(ModifierKey::Disabled), shiftKey(ModifierKey::Disabled), actionKey(NULL)
-        {
-            auto _keys = splitwstring(shortcutVK, ';');
-            for (auto it : _keys)
-            {
-                auto vkKeyCode = std::stoul(it);
-                SetKey(vkKeyCode);
-            }
-        }
+    //    RunProgramSpec2(const std::wstring& shortcutVK) :
+    //        winKey(ModifierKey::Disabled), ctrlKey(ModifierKey::Disabled), altKey(ModifierKey::Disabled), shiftKey(ModifierKey::Disabled), actionKey(NULL)
+    //    {
+    //        auto _keys = splitwstring(shortcutVK, ';');
+    //        for (auto it : _keys)
+    //        {
+    //            auto vkKeyCode = std::stoul(it);
+    //            SetKey(vkKeyCode);
+    //        }
+    //    }
 
-        std::vector<std::wstring> splitwstring(const std::wstring& input, wchar_t delimiter)
-        {
-            std::wstringstream ss(input);
-            std::wstring item;
-            std::vector<std::wstring> splittedStrings;
-            while (std::getline(ss, item, delimiter))
-            {
-                splittedStrings.push_back(item);
-            }
+    //    std::vector<std::wstring> splitwstring(const std::wstring& input, wchar_t delimiter)
+    //    {
+    //        std::wstringstream ss(input);
+    //        std::wstring item;
+    //        std::vector<std::wstring> splittedStrings;
+    //        while (std::getline(ss, item, delimiter))
+    //        {
+    //            splittedStrings.push_back(item);
+    //        }
 
-            return splittedStrings;
-        }
+    //        return splittedStrings;
+    //    }
 
-        bool SetKey(const DWORD input)
-        {
-            // Since there isn't a key for a common Win key we use the key code defined by us
-            if (input == CommonSharedConstants::VK_WIN_BOTH)
-            {
-                if (winKey == ModifierKey::Both)
-                {
-                    return false;
-                }
-                winKey = ModifierKey::Both;
-            }
-            else if (input == VK_LWIN)
-            {
-                if (winKey == ModifierKey::Left)
-                {
-                    return false;
-                }
-                winKey = ModifierKey::Left;
-            }
-            else if (input == VK_RWIN)
-            {
-                if (winKey == ModifierKey::Right)
-                {
-                    return false;
-                }
-                winKey = ModifierKey::Right;
-            }
-            else if (input == VK_LCONTROL)
-            {
-                if (ctrlKey == ModifierKey::Left)
-                {
-                    return false;
-                }
-                ctrlKey = ModifierKey::Left;
-            }
-            else if (input == VK_RCONTROL)
-            {
-                if (ctrlKey == ModifierKey::Right)
-                {
-                    return false;
-                }
-                ctrlKey = ModifierKey::Right;
-            }
-            else if (input == VK_CONTROL)
-            {
-                if (ctrlKey == ModifierKey::Both)
-                {
-                    return false;
-                }
-                ctrlKey = ModifierKey::Both;
-            }
-            else if (input == VK_LMENU)
-            {
-                if (altKey == ModifierKey::Left)
-                {
-                    return false;
-                }
-                altKey = ModifierKey::Left;
-            }
-            else if (input == VK_RMENU)
-            {
-                if (altKey == ModifierKey::Right)
-                {
-                    return false;
-                }
-                altKey = ModifierKey::Right;
-            }
-            else if (input == VK_MENU)
-            {
-                if (altKey == ModifierKey::Both)
-                {
-                    return false;
-                }
-                altKey = ModifierKey::Both;
-            }
-            else if (input == VK_LSHIFT)
-            {
-                if (shiftKey == ModifierKey::Left)
-                {
-                    return false;
-                }
-                shiftKey = ModifierKey::Left;
-            }
-            else if (input == VK_RSHIFT)
-            {
-                if (shiftKey == ModifierKey::Right)
-                {
-                    return false;
-                }
-                shiftKey = ModifierKey::Right;
-            }
-            else if (input == VK_SHIFT)
-            {
-                if (shiftKey == ModifierKey::Both)
-                {
-                    return false;
-                }
-                shiftKey = ModifierKey::Both;
-            }
-            else
-            {
-                if (actionKey == input)
-                {
-                    return false;
-                }
-                actionKey = input;
-            }
+    //    bool SetKey(const DWORD input)
+    //    {
+    //        // Since there isn't a key for a common Win key we use the key code defined by us
+    //        if (input == CommonSharedConstants::VK_WIN_BOTH)
+    //        {
+    //            if (winKey == ModifierKey::Both)
+    //            {
+    //                return false;
+    //            }
+    //            winKey = ModifierKey::Both;
+    //        }
+    //        else if (input == VK_LWIN)
+    //        {
+    //            if (winKey == ModifierKey::Left)
+    //            {
+    //                return false;
+    //            }
+    //            winKey = ModifierKey::Left;
+    //        }
+    //        else if (input == VK_RWIN)
+    //        {
+    //            if (winKey == ModifierKey::Right)
+    //            {
+    //                return false;
+    //            }
+    //            winKey = ModifierKey::Right;
+    //        }
+    //        else if (input == VK_LCONTROL)
+    //        {
+    //            if (ctrlKey == ModifierKey::Left)
+    //            {
+    //                return false;
+    //            }
+    //            ctrlKey = ModifierKey::Left;
+    //        }
+    //        else if (input == VK_RCONTROL)
+    //        {
+    //            if (ctrlKey == ModifierKey::Right)
+    //            {
+    //                return false;
+    //            }
+    //            ctrlKey = ModifierKey::Right;
+    //        }
+    //        else if (input == VK_CONTROL)
+    //        {
+    //            if (ctrlKey == ModifierKey::Both)
+    //            {
+    //                return false;
+    //            }
+    //            ctrlKey = ModifierKey::Both;
+    //        }
+    //        else if (input == VK_LMENU)
+    //        {
+    //            if (altKey == ModifierKey::Left)
+    //            {
+    //                return false;
+    //            }
+    //            altKey = ModifierKey::Left;
+    //        }
+    //        else if (input == VK_RMENU)
+    //        {
+    //            if (altKey == ModifierKey::Right)
+    //            {
+    //                return false;
+    //            }
+    //            altKey = ModifierKey::Right;
+    //        }
+    //        else if (input == VK_MENU)
+    //        {
+    //            if (altKey == ModifierKey::Both)
+    //            {
+    //                return false;
+    //            }
+    //            altKey = ModifierKey::Both;
+    //        }
+    //        else if (input == VK_LSHIFT)
+    //        {
+    //            if (shiftKey == ModifierKey::Left)
+    //            {
+    //                return false;
+    //            }
+    //            shiftKey = ModifierKey::Left;
+    //        }
+    //        else if (input == VK_RSHIFT)
+    //        {
+    //            if (shiftKey == ModifierKey::Right)
+    //            {
+    //                return false;
+    //            }
+    //            shiftKey = ModifierKey::Right;
+    //        }
+    //        else if (input == VK_SHIFT)
+    //        {
+    //            if (shiftKey == ModifierKey::Both)
+    //            {
+    //                return false;
+    //            }
+    //            shiftKey = ModifierKey::Both;
+    //        }
+    //        else
+    //        {
+    //            if (actionKey == input)
+    //            {
+    //                return false;
+    //            }
+    //            actionKey = input;
+    //        }
 
-            return true;
-        }
-    };
+    //        return true;
+    //    }
+    //};
 
     bool getConfigInit = false;
-    std::vector<RunProgramSpec> runProgramSpecs;
+    std::vector<RunProgramSpec2> runProgramSpecs;
 
     void RefreshConfig()
     {
@@ -407,7 +409,7 @@ namespace CentralizedKeyboardHook
 
                         auto path = it.GetObjectW().GetNamedString(L"targetApp");
 
-                        auto runProgramSpec = RunProgramSpec(originalKeys.c_str());
+                        auto runProgramSpec = RunProgramSpec2(originalKeys.c_str());
 
                         runProgramSpec.path = path;
 
@@ -447,9 +449,9 @@ namespace CentralizedKeyboardHook
         }
     }
 
-    bool isPartOfAnyRunProgramSpec(DWORD key)
+    bool isPartOfAnyRunProgramSpec2(DWORD key)
     {
-        for (RunProgramSpec runProgramSpec : runProgramSpecs)
+        for (RunProgramSpec2 runProgramSpec : runProgramSpecs)
         {
             if (runProgramSpec.actionKey == key)
             {
@@ -467,7 +469,7 @@ namespace CentralizedKeyboardHook
         return false;
     }
 
-    bool isPartOfThisRunProgramSpec(RunProgramSpec runProgramSpec, DWORD key)
+    bool isPartOfThisRunProgramSpec2(RunProgramSpec2 runProgramSpec, DWORD key)
     {
         for (DWORD c : runProgramSpec.keys)
         {
@@ -485,7 +487,7 @@ namespace CentralizedKeyboardHook
         {
             setupConfig();
 
-            if (!isPartOfAnyRunProgramSpec(hotkey.key))
+            if (!isPartOfAnyRunProgramSpec2(hotkey.key))
             {
                 lastKeyInChord = 0;
                 return;
@@ -496,7 +498,7 @@ namespace CentralizedKeyboardHook
             return;
         }
 
-        for (RunProgramSpec runProgramSpec : runProgramSpecs)
+        for (RunProgramSpec2 runProgramSpec : runProgramSpecs)
         {
             if (
                 (runProgramSpec.winKey == ModifierKey::Disabled || (runProgramSpec.winKey == ModifierKey::Left && hotkey.l_win)) 

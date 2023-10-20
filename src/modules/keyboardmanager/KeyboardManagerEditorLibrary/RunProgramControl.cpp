@@ -60,7 +60,7 @@ RunProgramControl::RunProgramControl(StackPanel table, StackPanel row, const int
 void RunProgramControl::SetAccessibleNameForTextBox(TextBox targetAppTextBox, int rowIndex)
 {
     // To set the accessible name of the target App text box by adding the string `All Apps` if the text box is empty, if not the application name is read by narrator.
-    std::wstring targetAppTextBoxAccessibleName = GET_RESOURCE_STRING(IDS_AUTOMATIONPROPERTIES_ROW) + std::to_wstring(rowIndex) + L", " + GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_TARGETAPPHEADER);
+    std::wstring targetAppTextBoxAccessibleName = GET_RESOURCE_STRING(IDS_AUTOMATIONPROPERTIES_ROW) + std::to_wstring(rowIndex) + L", " + GET_RESOURCE_STRING(IDS_EDITRUNPROGRAMS_PROGRAMNAME);
     if (targetAppTextBox.Text() == L"")
     {
         targetAppTextBoxAccessibleName += GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_ALLAPPS);

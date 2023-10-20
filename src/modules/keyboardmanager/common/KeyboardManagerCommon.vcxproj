@@ -44,6 +44,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(CIBuild)'!='true'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="RunProgramSpec2.cpp" />
     <ClCompile Include="Shortcut.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -56,6 +57,8 @@
     <ClInclude Include="KeyboardManagerConstants.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="RemapShortcut.h" />
+    <ClInclude Include="RunProgramSpec.h" />
+    <ClInclude Include="RunProgramSpec2.h" />
     <ClInclude Include="Shortcut.h" />
   </ItemGroup>
   <ItemGroup>
