@@ -31,6 +31,19 @@ void Trace::KeyRemapCount(const DWORD keyToKeyCount, const DWORD keyToShortcutCo
         TraceLoggingValue(keyToShortcutCount, "KeyToShortcutRemapCount"));
 }
 
+// Log number of os level shortcut remaps when the user uses Edit RunPrograms and saves settings
+void Trace::RunProgramRemapCount(const DWORD runProgramToRunProgramCount) noexcept
+{
+    //TraceLoggingWrite(
+    //    g_hProvider,
+    //    "KeyboardManager_OSLevelRunProgramRemapCount",
+    //    ProjectTelemetryPrivacyDataTag(ProjectTelemetryTag_ProductAndServicePerformance),
+    //    TraceLoggingKeyword(PROJECT_KEYWORD_MEASURE),
+    //    TraceLoggingValue(runProgramToRunProgramCount + runProgramToKeyCount, "OSLevelRunProgramRemapCount"),
+    //    TraceLoggingValue(runProgramToRunProgramCount, "OSLevelRunProgramToRunProgramRemapCount"),
+    //    TraceLoggingValue(runProgramToKeyCount, "OSLevelRunProgramToKeyRemapCount"));
+}
+
 // Log number of os level shortcut remaps when the user uses Edit Shortcuts and saves settings
 void Trace::OSLevelShortcutRemapCount(const DWORD shortcutToShortcutCount, const DWORD shortcutToKeyCount) noexcept
 {

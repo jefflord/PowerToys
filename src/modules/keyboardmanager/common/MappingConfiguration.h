@@ -42,6 +42,8 @@ public:
     // Function to add a new OS level shortcut remapping
     bool AddOSLevelShortcut(const Shortcut& originalSC, const KeyShortcutUnion& newSC);
 
+    bool AddOSRunProgram(const Shortcut& originalSC);
+    
     // Function to add a new App specific level shortcut remapping
     bool AddAppSpecificShortcut(const std::wstring& app, const Shortcut& originalSC, const KeyShortcutUnion& newSC);
 

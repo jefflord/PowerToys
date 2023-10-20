@@ -305,6 +305,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         {
             OnPropertyChanged(nameof(RemapKeys));
             OnPropertyChanged(nameof(RemapShortcuts));
+            OnPropertyChanged(nameof(RemapRunPrograms));
         }
 
         public void RefreshEnabledState()

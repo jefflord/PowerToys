@@ -5,9 +5,15 @@
 #include <common/utils/json.h>
 #include <common/logger/logger.h>
 #include <common/interop/shared_constants.h>
+#include <common/SettingsAPI/settings_objects.h>
+#include <common/SettingsAPI/settings_helpers.h>
+#include <modules/keyboardmanager/common/Shortcut.h>
+#include <modules/keyboardmanager/common/RemapShortcut.h>
+#include <modules/keyboardmanager/common/KeyboardManagerConstants.h>
 
 namespace CentralizedKeyboardHook
 {
+
     struct HotkeyDescriptor
     {
         Hotkey hotkey;
@@ -152,15 +158,34 @@ namespace CentralizedKeyboardHook
             return CallNextHookEx(hHook, nCode, wParam, lParam);
         }
 
+        LocalKey lHotkey;
+
+        lHotkey.win = (GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000);
+        lHotkey.control = static_cast<bool>(GetAsyncKeyState(VK_CONTROL) & 0x8000);
+        lHotkey.shift = static_cast<bool>(GetAsyncKeyState(VK_SHIFT) & 0x8000);
+        lHotkey.alt = static_cast<bool>(GetAsyncKeyState(VK_MENU) & 0x8000);
+
+        lHotkey.l_win = (GetAsyncKeyState(VK_LWIN) & 0x8000);
+        lHotkey.l_control = static_cast<bool>(GetAsyncKeyState(VK_LCONTROL) & 0x8000);
+        lHotkey.l_shift = static_cast<bool>(GetAsyncKeyState(VK_LSHIFT) & 0x8000);
+        lHotkey.l_alt = static_cast<bool>(GetAsyncKeyState(VK_LMENU) & 0x8000);
+
+        lHotkey.r_win = (GetAsyncKeyState(VK_RWIN) & 0x8000);
+        lHotkey.r_control = static_cast<bool>(GetAsyncKeyState(VK_RCONTROL) & 0x8000);
+        lHotkey.r_shift = static_cast<bool>(GetAsyncKeyState(VK_RSHIFT) & 0x8000);
+        lHotkey.r_alt = static_cast<bool>(GetAsyncKeyState(VK_RMENU) & 0x8000);
+
+        lHotkey.key = static_cast<unsigned char>(keyPressInfo.vkCode);
+
         Hotkey hotkey{
-            .win = (GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000),
-            .ctrl = static_cast<bool>(GetAsyncKeyState(VK_CONTROL) & 0x8000),
-            .shift = static_cast<bool>(GetAsyncKeyState(VK_SHIFT) & 0x8000),
-            .alt = static_cast<bool>(GetAsyncKeyState(VK_MENU) & 0x8000),
-            .key = static_cast<unsigned char>(keyPressInfo.vkCode)
+            .win = lHotkey.win,
+            .ctrl = lHotkey.control,
+            .shift = lHotkey.shift,
+            .alt = lHotkey.alt,
+            .key = static_cast<UCHAR>(lHotkey.key)
         };
 
-        handleCreateProcessHotKeysAndChords(hotkey);
+        handleCreateProcessHotKeysAndChords(lHotkey);
 
         std::function<bool()> action;
         {
@@ -196,17 +221,149 @@ namespace CentralizedKeyboardHook
     class RunProgramSpec
     {
     public:
-        bool win = false;
-        bool shift = false;
-        bool alt = false;
-        bool ctrl = false;
-        std::wstring path = L"";
-        std::vector<UCHAR> keys;
+        ModifierKey winKey = ModifierKey::Disabled;
+        ModifierKey ctrlKey = ModifierKey::Disabled;
+        ModifierKey altKey = ModifierKey::Disabled;
+        ModifierKey shiftKey = ModifierKey::Disabled;
+        DWORD actionKey = {};
 
-        //RunProgramSpec()
-        //{
-        //    // Initialization
-        //}
+        std::wstring path = L"";
+        std::vector<DWORD> keys;
+
+        RunProgramSpec(const std::wstring& shortcutVK) :
+            winKey(ModifierKey::Disabled), ctrlKey(ModifierKey::Disabled), altKey(ModifierKey::Disabled), shiftKey(ModifierKey::Disabled), actionKey(NULL)
+        {
+            auto _keys = splitwstring(shortcutVK, ';');
+            for (auto it : _keys)
+            {
+                auto vkKeyCode = std::stoul(it);
+                SetKey(vkKeyCode);
+            }
+        }
+
+        std::vector<std::wstring> splitwstring(const std::wstring& input, wchar_t delimiter)
+        {
+            std::wstringstream ss(input);
+            std::wstring item;
+            std::vector<std::wstring> splittedStrings;
+            while (std::getline(ss, item, delimiter))
+            {
+                splittedStrings.push_back(item);
+            }
+
+            return splittedStrings;
+        }
+
+        bool SetKey(const DWORD input)
+        {
+            // Since there isn't a key for a common Win key we use the key code defined by us
+            if (input == CommonSharedConstants::VK_WIN_BOTH)
+            {
+                if (winKey == ModifierKey::Both)
+                {
+                    return false;
+                }
+                winKey = ModifierKey::Both;
+            }
+            else if (input == VK_LWIN)
+            {
+                if (winKey == ModifierKey::Left)
+                {
+                    return false;
+                }
+                winKey = ModifierKey::Left;
+            }
+            else if (input == VK_RWIN)
+            {
+                if (winKey == ModifierKey::Right)
+                {
+                    return false;
+                }
+                winKey = ModifierKey::Right;
+            }
+            else if (input == VK_LCONTROL)
+            {
+                if (ctrlKey == ModifierKey::Left)
+                {
+                    return false;
+                }
+                ctrlKey = ModifierKey::Left;
+            }
+            else if (input == VK_RCONTROL)
+            {
+                if (ctrlKey == ModifierKey::Right)
+                {
+                    return false;
+                }
+                ctrlKey = ModifierKey::Right;
+            }
+            else if (input == VK_CONTROL)
+            {
+                if (ctrlKey == ModifierKey::Both)
+                {
+                    return false;
+                }
+                ctrlKey = ModifierKey::Both;
+            }
+            else if (input == VK_LMENU)
+            {
+                if (altKey == ModifierKey::Left)
+                {
+                    return false;
+                }
+                altKey = ModifierKey::Left;
+            }
+            else if (input == VK_RMENU)
+            {
+                if (altKey == ModifierKey::Right)
+                {
+                    return false;
+                }
+                altKey = ModifierKey::Right;
+            }
+            else if (input == VK_MENU)
+            {
+                if (altKey == ModifierKey::Both)
+                {
+                    return false;
+                }
+                altKey = ModifierKey::Both;
+            }
+            else if (input == VK_LSHIFT)
+            {
+                if (shiftKey == ModifierKey::Left)
+                {
+                    return false;
+                }
+                shiftKey = ModifierKey::Left;
+            }
+            else if (input == VK_RSHIFT)
+            {
+                if (shiftKey == ModifierKey::Right)
+                {
+                    return false;
+                }
+                shiftKey = ModifierKey::Right;
+            }
+            else if (input == VK_SHIFT)
+            {
+                if (shiftKey == ModifierKey::Both)
+                {
+                    return false;
+                }
+                shiftKey = ModifierKey::Both;
+            }
+            else
+            {
+                if (actionKey == input)
+                {
+                    return false;
+                }
+                actionKey = input;
+            }
+
+            return true;
+        }
     };
 
     bool getConfigInit = false;
@@ -222,26 +379,55 @@ namespace CentralizedKeyboardHook
     {
         if (!getConfigInit)
         {
-            auto jsonData = json::from_file(L"c:\\Temp\\keyboardManagerConfig.json");
+            PowerToysSettings::PowerToyValues settings = PowerToysSettings::PowerToyValues::load_from_settings_file(KeyboardManagerConstants::ModuleName);
+            auto current_config = settings.get_string_value(KeyboardManagerConstants::ActiveConfigurationSettingName);
+
+            if (!current_config)
+            {
+                return;
+            }
+
+            std::wstring currentConfig = KeyboardManagerConstants::DefaultConfiguration;
+
+            currentConfig = *current_config;
+
+            // Read the config file and load the remaps.
+            auto configFile = json::from_file(PTSettingsHelper::get_module_save_folder_location(KeyboardManagerConstants::ModuleName) + L"\\" + *current_config + L".json");
+            if (!configFile)
+            {
+                return;
+            }
+
+            auto jsonData = json::from_file(PTSettingsHelper::get_module_save_folder_location(KeyboardManagerConstants::ModuleName) + L"\\" + *current_config + L".json");
+
+            //auto jsonData = json::from_file(L"c:\\Temp\\keyboardManagerConfig.json");
 
             if (!jsonData)
             {
                 return;
             }
 
-            auto keyboardManagerConfig = jsonData->GetNamedObject(L"runProgramShortcuts");
+            auto keyboardManagerConfig = jsonData->GetNamedObject(L"remapShortcuts");
 
             if (keyboardManagerConfig)
             {
-                auto global = keyboardManagerConfig.GetNamedArray(L"global");
+                auto global = keyboardManagerConfig.GetNamedArray(L"runProgram");
                 for (const auto& it : global)
                 {
                     try
                     {
-                        // auto isChord = it.GetObjectW().GetNamedBoolean(L"isChord");
-                        RunProgramSpec runProgramSpec;
-                        runProgramSpec.win = true;
+                        auto originalKeys = it.GetObjectW().GetNamedString(KeyboardManagerConstants::OriginalKeysSettingName);
 
+                        auto path = it.GetObjectW().GetNamedString(L"targetApp");
+
+                        auto runProgramSpec = RunProgramSpec(originalKeys.c_str());
+
+                        runProgramSpec.path = path;
+
+                        /*
+                        // auto isChord = it.GetObjectW().GetNamedBoolean(L"isChord");
+                        
+                        
                         runProgramSpec.win = it.GetObjectW().GetNamedBoolean(L"win");
                         runProgramSpec.shift = it.GetObjectW().GetNamedBoolean(L"shift");
                         runProgramSpec.alt = it.GetObjectW().GetNamedBoolean(L"alt");
@@ -252,12 +438,15 @@ namespace CentralizedKeyboardHook
                         auto path = program.GetObjectW().GetNamedString(L"path");
 
                         runProgramSpec.path = path;
-
+                        
                         for (const auto& key : keys)
                         {
                             runProgramSpec.keys.push_back(static_cast<UCHAR>(key.GetNumber()));
                         }
 
+                        
+
+                        */
                         runProgramSpecs.push_back(runProgramSpec);
                     }
                     catch (...)
@@ -271,24 +460,29 @@ namespace CentralizedKeyboardHook
         }
     }
 
-    bool isPartOfAnyRunProgramSpec(UCHAR key)
+    bool isPartOfAnyRunProgramSpec(DWORD key)
     {
         for (RunProgramSpec runProgramSpec : runProgramSpecs)
         {
-            for (unsigned char c : runProgramSpec.keys)
+            if (runProgramSpec.actionKey == key)
+            {
+                return true;
+            }
+
+            /*for (unsigned char c : runProgramSpec.keys)
             {
                 if (c == key)
                 {
                     return true;
                 }
-            }
+            }*/
         }
         return false;
     }
 
-    bool isPartOfThisRunProgramSpec(RunProgramSpec runProgramSpec, UCHAR key)
+    bool isPartOfThisRunProgramSpec(RunProgramSpec runProgramSpec, DWORD key)
     {
-        for (unsigned char c : runProgramSpec.keys)
+        for (DWORD c : runProgramSpec.keys)
         {
             if (c == key)
             {
@@ -298,9 +492,9 @@ namespace CentralizedKeyboardHook
         return false;
     }
 
-    void handleCreateProcessHotKeysAndChords(CentralizedKeyboardHook::Hotkey& hotkey)
+    void handleCreateProcessHotKeysAndChords(LocalKey hotkey)
     {
-        if (hotkey.win || hotkey.shift || hotkey.ctrl || hotkey.alt)
+        if (hotkey.win || hotkey.shift || hotkey.control || hotkey.alt)
         {
             setupConfig();
 
@@ -317,10 +511,20 @@ namespace CentralizedKeyboardHook
 
         for (RunProgramSpec runProgramSpec : runProgramSpecs)
         {
-            if (runProgramSpec.win == hotkey.win && runProgramSpec.shift == hotkey.shift && runProgramSpec.ctrl == hotkey.ctrl && runProgramSpec.alt == hotkey.alt)
+            if (
+                (runProgramSpec.winKey == ModifierKey::Disabled || (runProgramSpec.winKey == ModifierKey::Left && hotkey.l_win)) 
+                && (runProgramSpec.shiftKey == ModifierKey::Disabled || (runProgramSpec.shiftKey == ModifierKey::Left && hotkey.l_shift)) 
+                && (runProgramSpec.altKey == ModifierKey::Disabled || (runProgramSpec.altKey == ModifierKey::Left && hotkey.l_alt)) 
+                && (runProgramSpec.ctrlKey == ModifierKey::Disabled || (runProgramSpec.ctrlKey == ModifierKey::Left && hotkey.l_control)))
             {
                 auto runProgram = false;
-                if (runProgramSpec.keys.size() == 1 && runProgramSpec.keys[0] == hotkey.key)
+
+                if (runProgramSpec.actionKey == hotkey.key)
+                {
+                    runProgram = true;
+                }
+
+                /*if (runProgramSpec.keys.size() == 1 && runProgramSpec.keys[0] == hotkey.key)
                 {
                     runProgram = true;
                 }
@@ -331,7 +535,7 @@ namespace CentralizedKeyboardHook
                 else
                 {
                     lastKeyInChord = hotkey.key;
-                }
+                }*/
 
                 if (runProgram)
                 {

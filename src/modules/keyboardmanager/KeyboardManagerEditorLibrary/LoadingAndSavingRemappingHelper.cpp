@@ -26,7 +26,7 @@ namespace LoadingAndSavingRemappingHelper
             std::wstring appName = remappings[i].second;
 
             bool ogKeyValidity = (ogKey.index() == 0 && std::get<DWORD>(ogKey) != NULL) || (ogKey.index() == 1 && EditorHelpers::IsValidShortcut(std::get<Shortcut>(ogKey)));
-            bool newKeyValidity = (newKey.index() == 0 && std::get<DWORD>(newKey) != NULL) || (newKey.index() == 1 && EditorHelpers::IsValidShortcut(std::get<Shortcut>(newKey)));
+            //bool newKeyValidity = (newKey.index() == 0 && std::get<DWORD>(newKey) != NULL) || (newKey.index() == 1 && EditorHelpers::IsValidShortcut(std::get<Shortcut>(newKey)));
 
             // Add new set for a new target app name
             if (ogKeys.find(appName) == ogKeys.end())
@@ -34,11 +34,11 @@ namespace LoadingAndSavingRemappingHelper
                 ogKeys[appName] = std::set<KeyShortcutUnion>();
             }
 
-            if (ogKeyValidity && newKeyValidity && ogKeys[appName].find(ogKey) == ogKeys[appName].end())
+            if (ogKeyValidity && ogKeys[appName].find(ogKey) == ogKeys[appName].end())
             {
                 ogKeys[appName].insert(ogKey);
             }
-            else if (ogKeyValidity && newKeyValidity && ogKeys[appName].find(ogKey) != ogKeys[appName].end())
+            else if (ogKeyValidity && ogKeys[appName].find(ogKey) != ogKeys[appName].end())
             {
                 isSuccess = RunProgramErrorType::RemapUnsuccessful;
             }
@@ -217,9 +217,7 @@ namespace LoadingAndSavingRemappingHelper
     void ApplyRunProgramRemappings(MappingConfiguration& mappingConfiguration, const RemapBuffer& remappings, bool isTelemetryRequired)
     {
         // Clear existing RunPrograms
-        mappingConfiguration.ClearOSLevelShortcuts();        
-        DWORD successfulOSLevelRunProgramToRunProgramRemapCount = 0;
-        DWORD successfulOSLevelRunProgramToKeyRemapCount = 0;
+        mappingConfiguration.ClearAppSpecificRunProgram();
         DWORD successfulAppSpecificRunProgramToRunProgramRemapCount = 0;
         DWORD successfulAppSpecificRunProgramToKeyRemapCount = 0;
 
@@ -229,45 +227,20 @@ namespace LoadingAndSavingRemappingHelper
             Shortcut originalRunProgram = std::get<Shortcut>(remappings[i].first[0]);
             KeyShortcutUnion newRunProgram = remappings[i].first[1];
 
-            if (EditorHelpers::IsValidShortcut(originalRunProgram) && ((newRunProgram.index() == 0 && std::get<DWORD>(newRunProgram) != NULL) || (newRunProgram.index() == 1 && EditorHelpers::IsValidShortcut(std::get<Shortcut>(newRunProgram)))))
+            if (EditorHelpers::IsValidShortcut(originalRunProgram) && ((newRunProgram.index() == 0 && std::get<DWORD>(newRunProgram) != NULL)))
             {
-                if (remappings[i].second == L"")
+                bool result = mappingConfiguration.AddAppSpecificRunProgram(remappings[i].second, originalRunProgram, newRunProgram);
+                if (result)
                 {
-                    bool result = mappingConfiguration.AddOSLevelShortcut(originalRunProgram, newRunProgram);
-                    if (result)
-                    {
-                        if (newRunProgram.index() == 0)
-                        {
-                            successfulOSLevelRunProgramToKeyRemapCount += 1;
-                        }
-                        else
-                        {
-                            successfulOSLevelRunProgramToRunProgramRemapCount += 1;
-                        }
-                    }
-                }
-                else
-                {
-                    bool result = mappingConfiguration.AddAppSpecificShortcut(remappings[i].second, originalRunProgram, newRunProgram);
-                    if (result)
-                    {
-                        if (newRunProgram.index() == 0)
-                        {
-                            successfulAppSpecificRunProgramToKeyRemapCount += 1;
-                        }
-                        else
-                        {
-                            successfulAppSpecificRunProgramToRunProgramRemapCount += 1;
-                        }
-                    }
+                    successfulAppSpecificRunProgramToRunProgramRemapCount += 1;
                 }
             }
-        }
 
-        // If telemetry is to be logged, log the RunProgram remap counts
-        if (isTelemetryRequired)
-        {
-            Trace::OSLevelShortcutRemapCount(successfulOSLevelRunProgramToRunProgramRemapCount, successfulOSLevelRunProgramToKeyRemapCount);            
+            // If telemetry is to be logged, log the RunProgram remap counts
+            if (isTelemetryRequired)
+            {
+                Trace::RunProgramRemapCount(successfulAppSpecificRunProgramToRunProgramRemapCount);
+            }
         }
     }
 

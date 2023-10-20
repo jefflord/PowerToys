@@ -29,4 +29,8 @@ namespace LoadingAndSavingRemappingHelper
 
     // Function to apply the shortcut remappings from the buffer to the KeyboardManagerState variable
     void ApplyShortcutRemappings(MappingConfiguration& mappingConfiguration, const RemapBuffer& remappings, bool isTelemetryRequired);
+
+    void ApplyRunProgramRemappings(MappingConfiguration& mappingConfiguration, const RemapBuffer& remappings, bool isTelemetryRequired);
+    
+    
 }

@@ -111,7 +111,6 @@ void KeyboardManagerState::ConfigureDetectRunProgramUI(const StackPanel& textBlo
     currentShortcutUI2 = textBlock2.as<winrt::Windows::Foundation::IInspectable>();
 }
 
-
 // Function to set the textblock of the detect remap key UI so that it can be accessed by the hook
 void KeyboardManagerState::ConfigureDetectSingleKeyRemapUI(const StackPanel& textBlock)
 {
@@ -299,7 +298,14 @@ Helpers::KeyboardHookDecision KeyboardManagerState::DetectSingleRemapKeyUIBacken
 Helpers::KeyboardHookDecision KeyboardManagerState::DetectShortcutUIBackend(LowlevelKeyboardEvent* data, bool isRemapKey)
 {
     // Check if the detect shortcut UI window has been activated
-    if ((!isRemapKey && CheckUIState(KeyboardManagerUIState::DetectShortcutWindowActivated)) || (isRemapKey && CheckUIState(KeyboardManagerUIState::DetectShortcutWindowInEditKeyboardWindowActivated)))
+    if (
+
+        (!isRemapKey && (CheckUIState(KeyboardManagerUIState::DetectShortcutWindowActivated) || CheckUIState(KeyboardManagerUIState::DetectRunProgramWindowActivated))) || 
+        
+        
+        (isRemapKey && (CheckUIState(KeyboardManagerUIState::DetectShortcutWindowInEditKeyboardWindowActivated) || CheckUIState(KeyboardManagerUIState::DetectRunProgramWindowInEditKeyboardWindowActivated)))
+
+    )
     {
         if (HandleKeyDelayEvent(data))
         {
@@ -322,7 +328,11 @@ Helpers::KeyboardHookDecision KeyboardManagerState::DetectShortcutUIBackend(Lowl
     }
 
     // If the detect shortcut UI window is not activated, then clear the shortcut buffer if it isn't empty
-    else if (!CheckUIState(KeyboardManagerUIState::DetectShortcutWindowActivated) && !CheckUIState(KeyboardManagerUIState::DetectShortcutWindowInEditKeyboardWindowActivated))
+    else if (
+            !CheckUIState(KeyboardManagerUIState::DetectShortcutWindowActivated) 
+        &&  !CheckUIState(KeyboardManagerUIState::DetectShortcutWindowInEditKeyboardWindowActivated) 
+        &&  !CheckUIState(KeyboardManagerUIState::DetectRunProgramWindowActivated) 
+        &&  !CheckUIState(KeyboardManagerUIState::DetectRunProgramWindowInEditKeyboardWindowActivated))
     {
         std::lock_guard<std::mutex> lock(detectedShortcut_mutex);
         if (!detectedShortcut.IsEmpty())
@@ -332,7 +342,13 @@ Helpers::KeyboardHookDecision KeyboardManagerState::DetectShortcutUIBackend(Lowl
     }
 
     // If the settings window is up, shortcut remappings should not be applied, but we should not suppress events in the hook
-    if (!isRemapKey && (CheckUIState(KeyboardManagerUIState::EditShortcutsWindowActivated)) || (isRemapKey && uiState == KeyboardManagerUIState::DetectShortcutWindowInEditKeyboardWindowActivated))
+    if (
+        (!isRemapKey 
+            && ((CheckUIState(KeyboardManagerUIState::EditShortcutsWindowActivated) || CheckUIState(KeyboardManagerUIState::EditRunProgramsWindowActivated)))) 
+        || 
+        (isRemapKey 
+            && (uiState == KeyboardManagerUIState::DetectShortcutWindowInEditKeyboardWindowActivated || uiState == KeyboardManagerUIState::DetectRunProgramWindowInEditKeyboardWindowActivated))
+        )
     {
         return Helpers::KeyboardHookDecision::SkipHook;
     }

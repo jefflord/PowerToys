@@ -35,7 +35,6 @@ void MappingConfiguration::ClearAppSpecificRunProgram()
     appSpecificRunProgramReMap.clear();
     appSpecificRunProgramReMapSortedKeys.clear();
 }
-//
 
 // Function to add a new OS level shortcut remapping
 bool MappingConfiguration::AddOSLevelShortcut(const Shortcut& originalSC, const KeyShortcutUnion& newSC)
@@ -53,6 +52,22 @@ bool MappingConfiguration::AddOSLevelShortcut(const Shortcut& originalSC, const 
 
     return true;
 }
+//
+//bool MappingConfiguration::AddOSRunProgram(const std::wstring& app, const Shortcut& originalSC)
+//{
+//    // Check if the shortcut is already remapped
+//    auto it = appSpecificRunProgramReMap.find(originalSC);
+//    if (it != appSpecificRunProgramReMap.end())
+//    {
+//        return false;
+//    }
+//
+//    appSpecificRunProgramReMap[app][originalSC] = RemapShortcut(newSC);
+//    appSpecificRunProgramReMapSortedKeys[app].push_back(originalSC);
+//    Helpers::SortShortcutVectorBasedOnSize(appSpecificRunProgramReMapSortedKeys[app]);
+//
+//    return true;
+//}
 
 // Function to add a new single key to key/shortcut remapping
 bool MappingConfiguration::AddSingleKeyRemap(const DWORD& originalKey, const KeyShortcutUnion& newRemapKey)
@@ -126,6 +141,22 @@ bool MappingConfiguration::AddAppSpecificRunProgram(const std::wstring& app, con
     Helpers::SortShortcutVectorBasedOnSize(appSpecificRunProgramReMapSortedKeys[process_name]);
     return true;
 }
+
+//bool MappingConfiguration::AddAppSpecificRunProgram2(const Shortcut& originalSC, const KeyShortcutUnion& newSC)
+//{
+//    // Check if the shortcut is already remapped
+//    auto it = osLevelShortcutReMap.find(originalSC);
+//    if (it != osLevelShortcutReMap.end())
+//    {
+//        return false;
+//    }
+//
+//    osLevelShortcutReMap[originalSC] = RemapShortcut(newSC);
+//    osLevelShortcutReMapSortedKeys.push_back(originalSC);
+//    Helpers::SortShortcutVectorBasedOnSize(osLevelShortcutReMapSortedKeys);
+//
+//    return true;
+//}
 
 bool MappingConfiguration::LoadSingleKeyRemaps(const json::JsonObject& jsonData)
 {
@@ -230,10 +261,25 @@ bool MappingConfiguration::LoadRunProgramRemaps(const json::JsonObject& remapSho
             try
             {
                 auto originalKeys = it.GetObjectW().GetNamedString(KeyboardManagerConstants::OriginalKeysSettingName);
-                auto newRemapKeys = it.GetObjectW().GetNamedString(KeyboardManagerConstants::NewRemapKeysSettingName);
+                //auto newRemapKeys = it.GetObjectW().GetNamedString(KeyboardManagerConstants::NewRemapKeysSettingName);
                 auto targetApp = it.GetObjectW().GetNamedString(KeyboardManagerConstants::TargetAppSettingName);
 
-                AddAppSpecificRunProgram(targetApp.c_str(), Shortcut(originalKeys.c_str()), Shortcut(newRemapKeys.c_str()));
+                AddAppSpecificRunProgram(targetApp.c_str(), Shortcut(originalKeys.c_str()), Shortcut(originalKeys.c_str()));
+                //CentralizedKeyboardHook::RefreshConfig();
+                //hotkey.key = static_cast<UCHAR>(key.GetNumber());
+
+                //AddAppSpecificRunProgram(targetApp.c_str(), Shortcut(originalKeys.c_str()), Shortcut(newRemapKeys.c_str()));
+
+                /*
+                CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkey, [modulePtr, emptyValue] {
+                    Logger::trace(L"{} hotkey is invoked from Centralized keyboard hook", modulePtr->get_key());
+                    return true;
+                });
+                */
+
+                //(remappings[i].second, originalRunProgram, newRunProgram);
+
+                //AddAppSpecificRunProgram(Shortcut(originalKeys.c_str()), std::stoul(newRemapKeys.c_str()));
             }
             catch (...)
             {

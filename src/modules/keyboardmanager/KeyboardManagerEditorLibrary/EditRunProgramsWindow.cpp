@@ -186,9 +186,9 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
     originalRunProgramHeader.FontWeight(Text::FontWeights::Bold());
 
     // Second header textblock in the header row of the runProgram table
-    TextBlock newRunProgramHeader;
+    /*TextBlock newRunProgramHeader;
     newRunProgramHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_TARGETHEADER));
-    newRunProgramHeader.FontWeight(Text::FontWeights::Bold());
+    newRunProgramHeader.FontWeight(Text::FontWeights::Bold());*/
 
     // Third header textblock in the header row of the runProgram table
     TextBlock targetAppHeader;
@@ -201,8 +201,10 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
     tableHeader.Margin({ 10, 0, 0, 10 });
     auto originalRunProgramContainer = UIHelpers::GetWrapped(originalRunProgramHeader, EditorConstants::RunProgramOriginColumnWidth + static_cast<double>(EditorConstants::RunProgramArrowColumnWidth));
     tableHeader.Children().Append(originalRunProgramContainer.as<FrameworkElement>());
-    auto newRunProgramHeaderContainer = UIHelpers::GetWrapped(newRunProgramHeader, EditorConstants::RunProgramTargetColumnWidth);
-    tableHeader.Children().Append(newRunProgramHeaderContainer.as<FrameworkElement>());
+    
+    //auto newRunProgramHeaderContainer = UIHelpers::GetWrapped(newRunProgramHeader, EditorConstants::RunProgramTargetColumnWidth);
+    //tableHeader.Children().Append(newRunProgramHeaderContainer.as<FrameworkElement>());
+
     tableHeader.Children().Append(targetAppHeader);
 
     // Store handle of edit runPrograms window
@@ -244,7 +246,7 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
         // Iterate through runPrograms for each app
         for (const auto& itRunProgram : itApp.second)
         {
-            RunProgramControl::AddNewRunProgramControlRow(runProgramTable, keyboardRemapControlObjects, itRunProgram.first, itRunProgram.second.targetShortcut, itApp.first);
+            RunProgramControl::AddNewRunProgramControlRow(runProgramTable, keyboardRemapControlObjects, itRunProgram.first, itApp.first);
         }
     }
 
@@ -258,8 +260,8 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
     header.SetLeftOf(applyButton, cancelButton);
 
     auto ApplyRemappings = [&mappingConfiguration, _hWndEditRunProgramsWindow]() {
-        //LoadingAndSavingRemappingHelper::ApplyRunProgramRemappings(mappingConfiguration, RunProgramControl::runProgramRemapBuffer, true);
-        LoadingAndSavingRemappingHelper::ApplyShortcutRemappings(mappingConfiguration, RunProgramControl::runProgramRemapBuffer, true);
+        LoadingAndSavingRemappingHelper::ApplyRunProgramRemappings(mappingConfiguration, RunProgramControl::runProgramRemapBuffer, true);
+        //LoadingAndSavingRemappingHelper::ApplyShortcutRemappings(mappingConfiguration, RunProgramControl::runProgramRemapBuffer, true);
 
         bool saveResult = mappingConfiguration.SaveSettingsToFile();
         PostMessage(_hWndEditRunProgramsWindow, WM_CLOSE, 0, 0);

@@ -31,7 +31,9 @@ RunProgramControl::RunProgramControl(StackPanel table, StackPanel row, const int
     typeRunProgram.as<Button>().Content(winrt::box_value(GET_RESOURCE_STRING(IDS_TYPE_BUTTON)));
     typeRunProgram.as<Button>().Width(EditorConstants::RunProgramTableDropDownWidth);
     typeRunProgram.as<Button>().Click([&, table, row, colIndex, isHybridControl, targetApp](winrt::Windows::Foundation::IInspectable const& sender, RoutedEventArgs const&) {
-        keyboardManagerState->SetUIState(KBMEditor::KeyboardManagerUIState::DetectRunProgramWindowActivated, editRunProgramsWindowHandle);
+        //keyboardManagerState->SetUIState(KBMEditor::KeyboardManagerUIState::DetectRunProgramWindowActivated, editRunProgramsWindowHandle);
+        keyboardManagerState->SetUIState(KBMEditor::KeyboardManagerUIState::DetectShortcutWindowActivated, editRunProgramsWindowHandle);
+        //
         // Using the XamlRoot of the typeRunProgram to get the root of the XAML host
         CreateDetectRunProgramWindow(sender, sender.as<Button>().XamlRoot(), *keyboardManagerState, colIndex, table, keyDropDownControlObjects, row, targetApp, isHybridControl, false, editRunProgramsWindowHandle, runProgramRemapBuffer);
     });
@@ -77,7 +79,7 @@ void RunProgramControl::UpdateAccessibleNames(StackPanel sourceColumn, StackPane
 }
 
 // Function to add a new row to the runProgram table. If the originalKeys and newKeys args are provided, then the displayed runPrograms are set to those values.
-void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vector<std::vector<std::unique_ptr<RunProgramControl>>>& keyboardRemapControlObjects, const Shortcut& originalKeys, const KeyShortcutUnion& newKeys, const std::wstring& targetAppName)
+void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vector<std::vector<std::unique_ptr<RunProgramControl>>>& keyboardRemapControlObjects, const Shortcut& originalKeys, const std::wstring& targetAppName)
 {
     // Textbox for target application
     TextBox targetAppTextBox;
@@ -115,9 +117,9 @@ void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vect
     row.Children().Append(arrowIconContainer);
 
     // RunProgramControl for the new runProgram
-    auto target = keyboardRemapControlObjects.back()[1]->GetRunProgramControl();
-    target.Width(EditorConstants::RunProgramTargetColumnWidth);
-    row.Children().Append(target);
+    //auto target = keyboardRemapControlObjects.back()[1]->GetRunProgramControl();
+    //target.Width(EditorConstants::RunProgramTargetColumnWidth);
+    //row.Children().Append(target);
 
     targetAppTextBox.Width(EditorConstants::RunProgramTableDropDownWidth);
     targetAppTextBox.PlaceholderText(KeyboardManagerEditorStrings::DefaultAppName());
@@ -257,20 +259,24 @@ void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vect
     UpdateAccessibleNames(keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][0]->GetRunProgramControl(), keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->GetRunProgramControl(), targetAppTextBox, deleteRunProgram, static_cast<int>(keyboardRemapControlObjects.size()));
 
     // Set the runProgram text if the two vectors are not empty (i.e. default args)
-    if (EditorHelpers::IsValidShortcut(originalKeys) && !(newKeys.index() == 0 && std::get<DWORD>(newKeys) == NULL) && !(newKeys.index() == 1 && !EditorHelpers::IsValidShortcut(std::get<Shortcut>(newKeys))))
+    if (EditorHelpers::IsValidShortcut(originalKeys) 
+
+        /*&& !(newKeys.index() == 0 && std::get<DWORD>(newKeys) == NULL) 
+        && !(newKeys.index() == 1 && !EditorHelpers::IsValidShortcut(std::get<Shortcut>(newKeys)))*/
+        )
     {
         // change to load app name
         runProgramRemapBuffer.push_back(std::make_pair<RemapBufferItem, std::wstring>(RemapBufferItem{ Shortcut(), Shortcut() }, std::wstring(targetAppName)));
         KeyDropDownControl::AddShortcutToControl(originalKeys, parent, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][0]->runProgramDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), *keyboardManagerState, 0, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][0]->keyDropDownControlObjects, runProgramRemapBuffer, row, targetAppTextBox, false, false);
 
-        if (newKeys.index() == 0)
+        /*if (newKeys.index() == 0)
         {
             keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->keyDropDownControlObjects[0]->SetSelectedValue(std::to_wstring(std::get<DWORD>(newKeys)));
         }
         else
         {
             KeyDropDownControl::AddShortcutToControl(std::get<Shortcut>(newKeys), parent, keyboardRemapControlObjects.back()[1]->runProgramDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), *keyboardManagerState, 1, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->keyDropDownControlObjects, runProgramRemapBuffer, row, targetAppTextBox, true, false);
-        }
+        }*/
     }
     else
     {

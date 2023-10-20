@@ -152,6 +152,13 @@ bool KeyboardManagerEditor::StartLowLevelKeyboardHook()
 
 void KeyboardManagerEditor::OpenEditorWindow(KeyboardManagerEditorType type)
 {
+    /*bool wait = true;
+
+    while (wait)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }*/
+
     switch (type)
     {
     case KeyboardManagerEditorType::KeyEditor:
