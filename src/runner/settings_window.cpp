@@ -3,6 +3,7 @@
 #include <Sddl.h>
 #include <sstream>
 #include <aclapi.h>
+#include <chrono>
 
 #include "powertoy_module.h"
 #include <common/interop/two_way_pipe_message_ipc.h>
@@ -165,8 +166,10 @@ void dispatch_json_config_to_modules(const json::JsonObject& powertoys_configs)
     }
 };
 
+auto last_dispatch_received_json_ms = static_cast<long long>(0);
+
 void dispatch_received_json(const std::wstring& json_to_parse)
-{
+{    
     json::JsonObject j;
     const bool ok = json::JsonObject::TryParse(json_to_parse, j);
     if (!ok)

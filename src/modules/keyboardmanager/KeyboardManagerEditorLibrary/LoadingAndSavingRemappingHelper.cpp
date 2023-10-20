@@ -225,11 +225,16 @@ namespace LoadingAndSavingRemappingHelper
         for (int i = 0; i < remappings.size(); i++)
         {
             Shortcut originalRunProgram = std::get<Shortcut>(remappings[i].first[0]);
-            KeyShortcutUnion newRunProgram = remappings[i].first[1];
+            //KeyShortcutUnion newRunProgram = remappings[i].first[1];
 
-            if (EditorHelpers::IsValidShortcut(originalRunProgram) && ((newRunProgram.index() == 0 && std::get<DWORD>(newRunProgram) != NULL)))
+            //if (EditorHelpers::IsValidShortcut(originalRunProgram) && ((newRunProgram.index() == 0 && std::get<DWORD>(newRunProgram) != NULL)))
+
+            auto shortCutIsValid = EditorHelpers::IsValidShortcut(originalRunProgram);
+            //auto newRunProgramIndex = newRunProgram.index();
+            //auto newRunProgramIsNotNull = (std::get<DWORD>(newRunProgram) != NULL);
+            if (shortCutIsValid)
             {
-                bool result = mappingConfiguration.AddAppSpecificRunProgram(remappings[i].second, originalRunProgram, newRunProgram);
+                bool result = mappingConfiguration.AddAppSpecificRunProgram(remappings[i].second, originalRunProgram, originalRunProgram);
                 if (result)
                 {
                     successfulAppSpecificRunProgramToRunProgramRemapCount += 1;

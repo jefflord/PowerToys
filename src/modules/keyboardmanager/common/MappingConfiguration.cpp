@@ -5,10 +5,12 @@
 #include <common/SettingsAPI/settings_helpers.h>
 #include <common/logger/logger.h>
 
+
 #include "KeyboardManagerConstants.h"
 #include "Shortcut.h"
 #include "RemapShortcut.h"
 #include "Helpers.h"
+
 
 // Function to clear the OS Level shortcut remapping table
 void MappingConfiguration::ClearOSLevelShortcuts()
@@ -510,7 +512,7 @@ bool MappingConfiguration::SaveSettingsToFile()
     configJson.SetNamedValue(KeyboardManagerConstants::RemapShortcutsSettingName, remapShortcuts);
 
     try
-    {
+    {        
         json::to_file((PTSettingsHelper::get_module_save_folder_location(KeyboardManagerConstants::ModuleName) + L"\\" + currentConfig + L".json"), configJson);
     }
     catch (...)

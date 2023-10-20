@@ -2,11 +2,15 @@
 // The Microsoft Corporation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.IO.Abstractions;
+using System.Threading;
 using Microsoft.PowerToys.Settings.UI.Helpers;
 using Microsoft.PowerToys.Settings.UI.Library;
+using Microsoft.PowerToys.Settings.UI.Library.Interfaces;
 using Microsoft.PowerToys.Settings.UI.Library.Utilities;
 using Microsoft.PowerToys.Settings.UI.ViewModels;
 using Microsoft.UI.Xaml.Controls;
@@ -19,11 +23,17 @@ namespace Microsoft.PowerToys.Settings.UI.Views
     /// </summary>
     public sealed partial class KeyboardManagerPage : Page, IRefreshablePage
     {
+        private GeneralSettings GeneralSettingsConfig { get; set; }
+
+        private Func<string, int> _sendConfigMSG = ShellPage.SendDefaultIPCMessage;
+
         private const string PowerToyName = "Keyboard Manager";
 
         private readonly IFileSystemWatcher watcher;
 
         public KeyboardManagerViewModel ViewModel { get; }
+
+        private DateTime lastConfigFileUpdate = DateTime.UtcNow.AddDays(-100);
 
         public KeyboardManagerPage()
         {
@@ -45,10 +55,22 @@ namespace Microsoft.PowerToys.Settings.UI.Views
             // Todo: Handle duplicate events either by somehow suppress them or re-read the configuration everytime since we will be updating the UI only if something is changed.
             if (ViewModel.LoadProfile())
             {
-                this.DispatcherQueue.TryEnqueue(() =>
+                if (lastConfigFileUpdate < DateTime.UtcNow.AddMilliseconds(-1000))
                 {
-                    ViewModel.NotifyFileChanged();
-                });
+                    this.DispatcherQueue.TryEnqueue(() =>
+                    {
+                        SettingsRepository<GeneralSettings> repository = SettingsRepository<GeneralSettings>.GetInstance(new SettingsUtils());
+                        GeneralSettings generalSettingsConfig = repository.SettingsConfig;
+                        OutGoingGeneralSettings outgoing = new OutGoingGeneralSettings(generalSettingsConfig);
+                        _sendConfigMSG(outgoing.ToString());
+                        ViewModel.NotifyFileChanged();
+                        lastConfigFileUpdate = DateTime.UtcNow;
+                    });
+                }
+                else
+                {
+                    Console.WriteLine("Skipping");
+                }
             }
         }
 

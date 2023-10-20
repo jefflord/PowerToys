@@ -5,11 +5,166 @@
 #include <common/logger/logger.h>
 #include <common/utils/winapi_error.h>
 
+#include <common/SettingsAPI/settings_objects.h>
+#include <common/SettingsAPI/settings_helpers.h>
+#include <modules/keyboardmanager/common/Shortcut.h>
+#include <modules/keyboardmanager/common/RemapShortcut.h>
+#include <modules/keyboardmanager/common/KeyboardManagerConstants.h>
+#include <common/interop/shared_constants.h>
+
 std::map<std::wstring, PowertoyModule>& modules()
 {
     static std::map<std::wstring, PowertoyModule> modules;
     return modules;
 }
+
+class RunProgramSpec
+{
+public:
+    ModifierKey winKey = ModifierKey::Disabled;
+    ModifierKey ctrlKey = ModifierKey::Disabled;
+    ModifierKey altKey = ModifierKey::Disabled;
+    ModifierKey shiftKey = ModifierKey::Disabled;
+    DWORD actionKey = {};
+
+    std::wstring path = L"";
+    std::vector<DWORD> keys;
+
+    RunProgramSpec(const std::wstring& shortcutVK) :
+        winKey(ModifierKey::Disabled), ctrlKey(ModifierKey::Disabled), altKey(ModifierKey::Disabled), shiftKey(ModifierKey::Disabled), actionKey(NULL)
+    {
+        auto _keys = splitwstring(shortcutVK, ';');
+        for (auto it : _keys)
+        {
+            auto vkKeyCode = std::stoul(it);
+            SetKey(vkKeyCode);
+        }
+    }
+
+    std::vector<std::wstring> splitwstring(const std::wstring& input, wchar_t delimiter)
+    {
+        std::wstringstream ss(input);
+        std::wstring item;
+        std::vector<std::wstring> splittedStrings;
+        while (std::getline(ss, item, delimiter))
+        {
+            splittedStrings.push_back(item);
+        }
+
+        return splittedStrings;
+    }
+
+    bool SetKey(const DWORD input)
+    {
+        // Since there isn't a key for a common Win key we use the key code defined by us
+        if (input == CommonSharedConstants::VK_WIN_BOTH)
+        {
+            if (winKey == ModifierKey::Both)
+            {
+                return false;
+            }
+            winKey = ModifierKey::Both;
+        }
+        else if (input == VK_LWIN)
+        {
+            if (winKey == ModifierKey::Left)
+            {
+                return false;
+            }
+            winKey = ModifierKey::Left;
+        }
+        else if (input == VK_RWIN)
+        {
+            if (winKey == ModifierKey::Right)
+            {
+                return false;
+            }
+            winKey = ModifierKey::Right;
+        }
+        else if (input == VK_LCONTROL)
+        {
+            if (ctrlKey == ModifierKey::Left)
+            {
+                return false;
+            }
+            ctrlKey = ModifierKey::Left;
+        }
+        else if (input == VK_RCONTROL)
+        {
+            if (ctrlKey == ModifierKey::Right)
+            {
+                return false;
+            }
+            ctrlKey = ModifierKey::Right;
+        }
+        else if (input == VK_CONTROL)
+        {
+            if (ctrlKey == ModifierKey::Both)
+            {
+                return false;
+            }
+            ctrlKey = ModifierKey::Both;
+        }
+        else if (input == VK_LMENU)
+        {
+            if (altKey == ModifierKey::Left)
+            {
+                return false;
+            }
+            altKey = ModifierKey::Left;
+        }
+        else if (input == VK_RMENU)
+        {
+            if (altKey == ModifierKey::Right)
+            {
+                return false;
+            }
+            altKey = ModifierKey::Right;
+        }
+        else if (input == VK_MENU)
+        {
+            if (altKey == ModifierKey::Both)
+            {
+                return false;
+            }
+            altKey = ModifierKey::Both;
+        }
+        else if (input == VK_LSHIFT)
+        {
+            if (shiftKey == ModifierKey::Left)
+            {
+                return false;
+            }
+            shiftKey = ModifierKey::Left;
+        }
+        else if (input == VK_RSHIFT)
+        {
+            if (shiftKey == ModifierKey::Right)
+            {
+                return false;
+            }
+            shiftKey = ModifierKey::Right;
+        }
+        else if (input == VK_SHIFT)
+        {
+            if (shiftKey == ModifierKey::Both)
+            {
+                return false;
+            }
+            shiftKey = ModifierKey::Both;
+        }
+        else
+        {
+            if (actionKey == input)
+            {
+                return false;
+            }
+            actionKey = input;
+        }
+
+        return true;
+    }
+};
 
 PowertoyModule load_powertoy(const std::wstring_view filename)
 {
@@ -87,6 +242,57 @@ void PowertoyModule::add_run_program_shortcuts()
 
     try
     {
+        PowerToysSettings::PowerToyValues settings = PowerToysSettings::PowerToyValues::load_from_settings_file(KeyboardManagerConstants::ModuleName);
+        auto current_config = settings.get_string_value(KeyboardManagerConstants::ActiveConfigurationSettingName);
+
+        if (!current_config)
+        {
+            return;
+        }
+
+        auto jsonData = json::from_file(PTSettingsHelper::get_module_save_folder_location(KeyboardManagerConstants::ModuleName) + L"\\" + *current_config + L".json");
+
+        if (!jsonData)
+        {
+            return;
+        }
+
+        auto keyboardManagerConfig = jsonData->GetNamedObject(KeyboardManagerConstants::RemapShortcutsSettingName);
+
+        if (keyboardManagerConfig)
+        {
+            auto global = keyboardManagerConfig.GetNamedArray(KeyboardManagerConstants::AppSpecificRemapRunProgramsSettingName);
+            for (const auto& it : global)
+            {
+                try
+                {
+                    auto originalKeys = it.GetObjectW().GetNamedString(KeyboardManagerConstants::OriginalKeysSettingName);
+
+                    auto path = it.GetObjectW().GetNamedString(L"targetApp");
+
+                    auto runProgramSpec = RunProgramSpec(originalKeys.c_str());
+
+                    // auto isChord = it.GetObjectW().GetNamedBoolean(L"isChord");
+                    hotkey.win = (runProgramSpec.winKey == ModifierKey::Left || runProgramSpec.winKey == ModifierKey::Right);
+                    hotkey.shift = (runProgramSpec.shiftKey == ModifierKey::Left || runProgramSpec.shiftKey == ModifierKey::Right);
+                    hotkey.alt = (runProgramSpec.altKey == ModifierKey::Left || runProgramSpec.altKey == ModifierKey::Right);
+                    hotkey.ctrl = (runProgramSpec.ctrlKey == ModifierKey::Left || runProgramSpec.ctrlKey == ModifierKey::Right);
+                    
+
+                    hotkey.key = static_cast<UCHAR>(runProgramSpec.actionKey);
+                    CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkey, [modulePtr, emptyValue] {
+                        Logger::trace(L"{} hotkey is invoked from Centralized keyboard hook", modulePtr->get_key());
+                        return true;
+                    });
+                }
+                catch (...)
+                {
+                    Logger::error(L"Improper Key Data JSON. Try the next remap.");
+                }
+            }
+        }
+
+        /*
         auto jsonData = json::from_file(L"c:\\Temp\\keyboardManagerConfig.json");
 
         if (!jsonData)
@@ -128,6 +334,7 @@ void PowertoyModule::add_run_program_shortcuts()
                 }
             }
         }
+        */
     }
     catch (...)
     {

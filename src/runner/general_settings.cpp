@@ -57,7 +57,7 @@ json::JsonObject load_general_settings()
     }
     run_as_elevated = loaded.GetNamedBoolean(L"run_elevated", false);
     download_updates_automatically = loaded.GetNamedBoolean(L"download_updates_automatically", true) && check_user_is_admin();
-    enable_experimentation = loaded.GetNamedBoolean(L"enable_experimentation",true);
+    enable_experimentation = loaded.GetNamedBoolean(L"enable_experimentation", true);
 
     return loaded;
 }
@@ -159,10 +159,14 @@ void apply_general_settings(const json::JsonObject& general_configs, bool save)
                 target_enabled = gpo_rule == powertoys_gpo::gpo_rule_configured_enabled;
             }
 
-            if (module_inst_enabled == target_enabled)
+            if (name != L"Keyboard Manager")
             {
-                continue;
+                if (module_inst_enabled == target_enabled)
+                {
+                    continue;
+                }
             }
+            
             if (target_enabled)
             {
                 Logger::info(L"apply_general_settings: Enabling powertoy {}", name);
@@ -173,7 +177,9 @@ void apply_general_settings(const json::JsonObject& general_configs, bool save)
                 Logger::info(L"apply_general_settings: Disabling powertoy {}", name);
                 powertoy->disable();
             }
+
             // Sync the hotkey state with the module state, so it can be removed for disabled modules.
+            powertoy.add_run_program_shortcuts();
             powertoy.UpdateHotkeyEx();
         }
     }
@@ -224,8 +230,7 @@ void start_enabled_powertoys()
             {
                 std::wstring disable_module_name{ static_cast<std::wstring_view>(disabled_element.Key()) };
 
-                if (powertoys_gpo_configuration.find(disable_module_name)!=powertoys_gpo_configuration.end() 
-                    && (powertoys_gpo_configuration[disable_module_name]==powertoys_gpo::gpo_rule_configured_enabled || powertoys_gpo_configuration[disable_module_name]==powertoys_gpo::gpo_rule_configured_disabled))
+                if (powertoys_gpo_configuration.find(disable_module_name) != powertoys_gpo_configuration.end() && (powertoys_gpo_configuration[disable_module_name] == powertoys_gpo::gpo_rule_configured_enabled || powertoys_gpo_configuration[disable_module_name] == powertoys_gpo::gpo_rule_configured_disabled))
                 {
                     // If gpo forces the enabled setting, no need to check the setting for this PowerToy. It will be applied later on this function.
                     continue;

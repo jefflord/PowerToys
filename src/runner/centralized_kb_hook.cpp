@@ -387,31 +387,18 @@ namespace CentralizedKeyboardHook
                 return;
             }
 
-            std::wstring currentConfig = KeyboardManagerConstants::DefaultConfiguration;
-
-            currentConfig = *current_config;
-
-            // Read the config file and load the remaps.
-            auto configFile = json::from_file(PTSettingsHelper::get_module_save_folder_location(KeyboardManagerConstants::ModuleName) + L"\\" + *current_config + L".json");
-            if (!configFile)
-            {
-                return;
-            }
-
             auto jsonData = json::from_file(PTSettingsHelper::get_module_save_folder_location(KeyboardManagerConstants::ModuleName) + L"\\" + *current_config + L".json");
-
-            //auto jsonData = json::from_file(L"c:\\Temp\\keyboardManagerConfig.json");
 
             if (!jsonData)
             {
                 return;
             }
 
-            auto keyboardManagerConfig = jsonData->GetNamedObject(L"remapShortcuts");
+            auto keyboardManagerConfig = jsonData->GetNamedObject(KeyboardManagerConstants::RemapShortcutsSettingName);
 
             if (keyboardManagerConfig)
             {
-                auto global = keyboardManagerConfig.GetNamedArray(L"runProgram");
+                auto global = keyboardManagerConfig.GetNamedArray(KeyboardManagerConstants::AppSpecificRemapRunProgramsSettingName);
                 for (const auto& it : global)
                 {
                     try
