@@ -246,7 +246,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
             OpenEditor((int)KeyboardManagerEditorType.KeyEditor);
         }
 
-        private void OnEditShortcut()
+        public void OnEditShortcut()
         {
             OpenEditor((int)KeyboardManagerEditorType.ShortcutEditor);
         }
