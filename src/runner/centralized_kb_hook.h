@@ -34,4 +34,6 @@ namespace CentralizedKeyboardHook
     void ClearModuleHotkeys(const std::wstring& moduleName) noexcept;
     void RegisterWindow(HWND hwnd) noexcept;
     void RefreshConfig();
+    DWORD GetProcessIdByName(const std::wstring& processName);
+    std::wstring GetFileNameFromPath(const std::wstring& fullPath);
 };

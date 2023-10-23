@@ -13,6 +13,13 @@
 #include "modules/keyboardmanager/common/RunProgramSpec2.h"
 #include <modules/keyboardmanager/common/KeyboardManagerConstants.h>
 
+// For GetProcessIdByName
+#include <windows.h>
+#include <tlhelp32.h>
+#include <iostream>
+#include <string>
+#include <filesystem>
+
 namespace CentralizedKeyboardHook
 {
 
@@ -220,154 +227,6 @@ namespace CentralizedKeyboardHook
         return CallNextHookEx(hHook, nCode, wParam, lParam);
     }
 
-    //class RunProgramSpec2
-    //{
-    //public:
-    //    ModifierKey winKey = ModifierKey::Disabled;
-    //    ModifierKey ctrlKey = ModifierKey::Disabled;
-    //    ModifierKey altKey = ModifierKey::Disabled;
-    //    ModifierKey shiftKey = ModifierKey::Disabled;
-    //    DWORD actionKey = {};
-
-    //    std::wstring path = L"";
-    //    std::vector<DWORD> keys;
-
-    //    RunProgramSpec2(const std::wstring& shortcutVK) :
-    //        winKey(ModifierKey::Disabled), ctrlKey(ModifierKey::Disabled), altKey(ModifierKey::Disabled), shiftKey(ModifierKey::Disabled), actionKey(NULL)
-    //    {
-    //        auto _keys = splitwstring(shortcutVK, ';');
-    //        for (auto it : _keys)
-    //        {
-    //            auto vkKeyCode = std::stoul(it);
-    //            SetKey(vkKeyCode);
-    //        }
-    //    }
-
-    //    std::vector<std::wstring> splitwstring(const std::wstring& input, wchar_t delimiter)
-    //    {
-    //        std::wstringstream ss(input);
-    //        std::wstring item;
-    //        std::vector<std::wstring> splittedStrings;
-    //        while (std::getline(ss, item, delimiter))
-    //        {
-    //            splittedStrings.push_back(item);
-    //        }
-
-    //        return splittedStrings;
-    //    }
-
-    //    bool SetKey(const DWORD input)
-    //    {
-    //        // Since there isn't a key for a common Win key we use the key code defined by us
-    //        if (input == CommonSharedConstants::VK_WIN_BOTH)
-    //        {
-    //            if (winKey == ModifierKey::Both)
-    //            {
-    //                return false;
-    //            }
-    //            winKey = ModifierKey::Both;
-    //        }
-    //        else if (input == VK_LWIN)
-    //        {
-    //            if (winKey == ModifierKey::Left)
-    //            {
-    //                return false;
-    //            }
-    //            winKey = ModifierKey::Left;
-    //        }
-    //        else if (input == VK_RWIN)
-    //        {
-    //            if (winKey == ModifierKey::Right)
-    //            {
-    //                return false;
-    //            }
-    //            winKey = ModifierKey::Right;
-    //        }
-    //        else if (input == VK_LCONTROL)
-    //        {
-    //            if (ctrlKey == ModifierKey::Left)
-    //            {
-    //                return false;
-    //            }
-    //            ctrlKey = ModifierKey::Left;
-    //        }
-    //        else if (input == VK_RCONTROL)
-    //        {
-    //            if (ctrlKey == ModifierKey::Right)
-    //            {
-    //                return false;
-    //            }
-    //            ctrlKey = ModifierKey::Right;
-    //        }
-    //        else if (input == VK_CONTROL)
-    //        {
-    //            if (ctrlKey == ModifierKey::Both)
-    //            {
-    //                return false;
-    //            }
-    //            ctrlKey = ModifierKey::Both;
-    //        }
-    //        else if (input == VK_LMENU)
-    //        {
-    //            if (altKey == ModifierKey::Left)
-    //            {
-    //                return false;
-    //            }
-    //            altKey = ModifierKey::Left;
-    //        }
-    //        else if (input == VK_RMENU)
-    //        {
-    //            if (altKey == ModifierKey::Right)
-    //            {
-    //                return false;
-    //            }
-    //            altKey = ModifierKey::Right;
-    //        }
-    //        else if (input == VK_MENU)
-    //        {
-    //            if (altKey == ModifierKey::Both)
-    //            {
-    //                return false;
-    //            }
-    //            altKey = ModifierKey::Both;
-    //        }
-    //        else if (input == VK_LSHIFT)
-    //        {
-    //            if (shiftKey == ModifierKey::Left)
-    //            {
-    //                return false;
-    //            }
-    //            shiftKey = ModifierKey::Left;
-    //        }
-    //        else if (input == VK_RSHIFT)
-    //        {
-    //            if (shiftKey == ModifierKey::Right)
-    //            {
-    //                return false;
-    //            }
-    //            shiftKey = ModifierKey::Right;
-    //        }
-    //        else if (input == VK_SHIFT)
-    //        {
-    //            if (shiftKey == ModifierKey::Both)
-    //            {
-    //                return false;
-    //            }
-    //            shiftKey = ModifierKey::Both;
-    //        }
-    //        else
-    //        {
-    //            if (actionKey == input)
-    //            {
-    //                return false;
-    //            }
-    //            actionKey = input;
-    //        }
-
-    //        return true;
-    //    }
-    //};
-
     bool getConfigInit = false;
     std::vector<RunProgramSpec2> runProgramSpecs;
 
@@ -413,29 +272,6 @@ namespace CentralizedKeyboardHook
 
                         runProgramSpec.path = path;
 
-                        /*
-                        // auto isChord = it.GetObjectW().GetNamedBoolean(L"isChord");
-                        
-                        
-                        runProgramSpec.win = it.GetObjectW().GetNamedBoolean(L"win");
-                        runProgramSpec.shift = it.GetObjectW().GetNamedBoolean(L"shift");
-                        runProgramSpec.alt = it.GetObjectW().GetNamedBoolean(L"alt");
-                        runProgramSpec.ctrl = it.GetObjectW().GetNamedBoolean(L"control");
-
-                        auto keys = it.GetObjectW().GetNamedArray(L"keys");
-                        auto program = it.GetObjectW().GetNamedObject(L"program");
-                        auto path = program.GetObjectW().GetNamedString(L"path");
-
-                        runProgramSpec.path = path;
-                        
-                        for (const auto& key : keys)
-                        {
-                            runProgramSpec.keys.push_back(static_cast<UCHAR>(key.GetNumber()));
-                        }
-
-                        
-
-                        */
                         runProgramSpecs.push_back(runProgramSpec);
                     }
                     catch (...)
@@ -501,10 +337,7 @@ namespace CentralizedKeyboardHook
         for (RunProgramSpec2 runProgramSpec : runProgramSpecs)
         {
             if (
-                (runProgramSpec.winKey == ModifierKey::Disabled || (runProgramSpec.winKey == ModifierKey::Left && hotkey.l_win)) 
-                && (runProgramSpec.shiftKey == ModifierKey::Disabled || (runProgramSpec.shiftKey == ModifierKey::Left && hotkey.l_shift)) 
-                && (runProgramSpec.altKey == ModifierKey::Disabled || (runProgramSpec.altKey == ModifierKey::Left && hotkey.l_alt)) 
-                && (runProgramSpec.ctrlKey == ModifierKey::Disabled || (runProgramSpec.ctrlKey == ModifierKey::Left && hotkey.l_control)))
+                (runProgramSpec.winKey == ModifierKey::Disabled || (runProgramSpec.winKey == ModifierKey::Left && hotkey.l_win)) && (runProgramSpec.shiftKey == ModifierKey::Disabled || (runProgramSpec.shiftKey == ModifierKey::Left && hotkey.l_shift)) && (runProgramSpec.altKey == ModifierKey::Disabled || (runProgramSpec.altKey == ModifierKey::Left && hotkey.l_alt)) && (runProgramSpec.ctrlKey == ModifierKey::Disabled || (runProgramSpec.ctrlKey == ModifierKey::Left && hotkey.l_control)))
             {
                 auto runProgram = false;
 
@@ -538,14 +371,133 @@ namespace CentralizedKeyboardHook
                     else
                     {
                         std::wstring executable_path = runProgramSpec.path;
-                        std::wstring executable_args = fmt::format(L"\"{}\"", executable_path);
-                        STARTUPINFO startup_info = { sizeof(startup_info) };
-                        PROCESS_INFORMATION process_info = { 0 };
-                        CreateProcessW(executable_path.c_str(), executable_args.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup_info, &process_info);
+                        auto fileNamePart = GetFileNameFromPath(executable_path);
+                        auto pid = GetProcessIdByName(fileNamePart);
+                        if (pid != 0)
+                        {
+                            HWND hwnd = FindWindow(nullptr, nullptr);
+                            if (hwnd)
+                            {
+                                DWORD currentProcessId;
+                                GetWindowThreadProcessId(hwnd, &currentProcessId);
+
+                                if (currentProcessId != pid)
+                                {
+                                    /*DWORD windowThreadProcessId = GetWindowThreadProcessId(GetForegroundWindow(), &currentProcessId);
+                                    DWORD currentThreadId = GetCurrentThreadId();
+                                    DWORD CONST_SW_SHOW = 5;
+                                    AttachThreadInput(windowThreadProcessId, currentThreadId, true);
+                                    BringWindowToTop(hwnd);
+                                    ShowWindow(hwnd, CONST_SW_SHOW);
+                                    AttachThreadInput(windowThreadProcessId, currentThreadId, false);*/
+                                    if (true)
+                                    {
+                                        HANDLE tokenHandle;
+                                        if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &tokenHandle))
+                                        {
+                                            TOKEN_PRIVILEGES tokenPrivileges;
+                                            LookupPrivilegeValue(nullptr, SE_DEBUG_NAME, &tokenPrivileges.Privileges[0].Luid);
+                                            tokenPrivileges.PrivilegeCount = 1;
+                                            tokenPrivileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+                                            if (AdjustTokenPrivileges(tokenHandle, FALSE, &tokenPrivileges, sizeof(TOKEN_PRIVILEGES), nullptr, nullptr))
+                                            {
+                                                AllowSetForegroundWindow(pid);
+                                                SetForegroundWindow(hwnd);
+
+                                                ShowWindow(hwnd, SW_RESTORE);
+                                                ShowWindow(hwnd, SW_SHOWNORMAL);
+
+                                                ShowWindowAsync(hwnd, SW_RESTORE);
+
+                                                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+
+                                                SetForegroundWindow(hwnd);
+
+                                                SetActiveWindow(hwnd);
+                                                BringWindowToTop(hwnd);
+                                                SetActiveWindow(hwnd);
+                                                //AttachConsole(pid);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            std::wstring executable_args = fmt::format(L"\"{}\"", executable_path);
+                            STARTUPINFO startup_info = { sizeof(startup_info) };
+                            PROCESS_INFORMATION process_info = { 0 };
+                            CreateProcessW(executable_path.c_str(), executable_args.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup_info, &process_info);
+                        }
+
+                        //DWORD pid;
+                        //HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, L"myprogram.exe");
+                        //if (hProc)
+                        //{
+                        //    GetProcessId(hProc, &pid);
+                        //    CloseHandle(hProc);
+                        //}
+
+                        //DWORD pid = process_info.dwProcessId;
+                        //AttachConsole(pid);
+                        //SetForegroundWindow(pid);
                     }
                 }
             }
         }
+    }
+
+    std::wstring GetFileNameFromPath(const std::wstring& fullPath)
+    {
+        size_t found = fullPath.find_last_of(L"\\");
+        if (found != std::wstring::npos)
+        {
+            return fullPath.substr(found + 1);
+        }
+        return fullPath;
+    }
+
+    //std::wstring GetFileNameFromPath(const std::wstring& fullPath)
+    //{
+    //    std::filesystem::path fullpath(fullPath);
+    //    auto filename = fullpath.filename().wstring();
+    //    return filename;
+    //    /*
+
+    //    wchar_t fileName[MAX_PATH];
+    //    wcscpy_s(fileName, MAX_PATH, fullPath.c_str());
+    //    PathFindFileName(fullPath.c_str());
+    //    return std::wstring(fileName);*/
+    //}
+
+    DWORD GetProcessIdByName(const std::wstring& processName)
+    {
+        DWORD pid = 0;
+        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+        if (snapshot != INVALID_HANDLE_VALUE)
+        {
+            PROCESSENTRY32 processEntry;
+            processEntry.dwSize = sizeof(PROCESSENTRY32);
+
+            if (Process32First(snapshot, &processEntry))
+            {
+                do
+                {
+                    if (_wcsicmp(processEntry.szExeFile, processName.c_str()) == 0)
+                    {
+                        pid = processEntry.th32ProcessID;
+                        break;
+                    }
+                } while (Process32Next(snapshot, &processEntry));
+            }
+
+            CloseHandle(snapshot);
+        }
+
+        return pid;
     }
 
     void SetHotkeyAction(const std::wstring& moduleName, const Hotkey& hotkey, std::function<bool()>&& action) noexcept
