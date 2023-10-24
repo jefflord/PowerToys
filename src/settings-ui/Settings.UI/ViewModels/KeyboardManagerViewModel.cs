@@ -241,7 +241,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
 
         public ICommand EditRunProgramCommand => _editRunProgramCommand ?? (_editRunProgramCommand = new RelayCommand(OnEditRunProgram));
 
-        private void OnRemapKeyboard()
+        public void OnRemapKeyboard()
         {
             OpenEditor((int)KeyboardManagerEditorType.KeyEditor);
         }
