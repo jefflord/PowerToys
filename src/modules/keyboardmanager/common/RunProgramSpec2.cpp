@@ -7,19 +7,25 @@
 #include <string>
 #include <sstream>
 
-
-RunProgramSpec2::RunProgramSpec2(const std::wstring& shortcutVK) :
+RunProgramSpec2::RunProgramSpec2(const std::wstring& shortcutVK, const std::wstring& targetAppSpec) :
     winKey(ModifierKey::Disabled), ctrlKey(ModifierKey::Disabled), altKey(ModifierKey::Disabled), shiftKey(ModifierKey::Disabled), actionKey(NULL)
 {
-    auto _keys = splitwstring(shortcutVK, ';');
+    auto _keys = splitwstringOnChar(shortcutVK, ';');
     for (auto it : _keys)
     {
         auto vkKeyCode = std::stoul(it);
         SetKey(vkKeyCode);
     }
+
+    
+    auto targetParts = splitwStringOnString(targetAppSpec, L"<|||>", false);
+
+    path = targetParts[0];
+    args = targetParts[1];
+    dir = targetParts[2];
 }
 
-std::vector<std::wstring> RunProgramSpec2::splitwstring(const std::wstring& input, wchar_t delimiter)
+std::vector<std::wstring> RunProgramSpec2::splitwstringOnChar(const std::wstring& input, wchar_t delimiter)
 {
     std::wstringstream ss(input);
     std::wstring item;

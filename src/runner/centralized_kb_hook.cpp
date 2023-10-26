@@ -268,9 +268,7 @@ namespace CentralizedKeyboardHook
 
                         auto path = it.GetObjectW().GetNamedString(L"targetApp");
 
-                        auto runProgramSpec = RunProgramSpec2(originalKeys.c_str());
-
-                        runProgramSpec.path = path;
+                        auto runProgramSpec = RunProgramSpec2(originalKeys.c_str(), path.c_str());
 
                         runProgramSpecs.push_back(runProgramSpec);
                     }
@@ -372,81 +370,135 @@ namespace CentralizedKeyboardHook
                     {
                         std::wstring executable_path = runProgramSpec.path;
                         auto fileNamePart = GetFileNameFromPath(executable_path);
-                        auto pid = GetProcessIdByName(fileNamePart);
-                        if (pid != 0)
+                        auto targetPid = GetProcessIdByName(fileNamePart);
+                        auto consoleShowSuccess = false;
+                        auto showByMainWindow = false;
+
+                        HWND hwnd = find_main_window(targetPid);
+                        if (hwnd != NULL)
                         {
-                            HWND hwnd = FindWindow(nullptr, nullptr);
-                            if (hwnd)
+                            ShowWindow(hwnd, SW_RESTORE);
+
+                            if (!SetForegroundWindow(hwnd))
                             {
-                                DWORD currentProcessId;
-                                GetWindowThreadProcessId(hwnd, &currentProcessId);
+                                auto errorCode = GetLastError();
+                                Logger::error(L"SetForegroundWindow", errorCode, L"PowerToys - Interop");
+                            }
+                            else
+                            {
+                                showByMainWindow = true;
+                            }
+                        }
 
-                                if (currentProcessId != pid)
+                        if (showByMainWindow)
+                        {
+                            return;
+                        }
+
+                        // showByMainWindow failed, try by console.
+                        if (targetPid != 0)
+                        {
+                            hwnd = FindWindow(nullptr, nullptr);
+                            if (AttachConsole(targetPid))
+                            {
+                                // Get the console window handle
+                                hwnd = GetConsoleWindow();
+
+                                if (hwnd != NULL)
                                 {
-                                    /*DWORD windowThreadProcessId = GetWindowThreadProcessId(GetForegroundWindow(), &currentProcessId);
-                                    DWORD currentThreadId = GetCurrentThreadId();
-                                    DWORD CONST_SW_SHOW = 5;
-                                    AttachThreadInput(windowThreadProcessId, currentThreadId, true);
-                                    BringWindowToTop(hwnd);
-                                    ShowWindow(hwnd, CONST_SW_SHOW);
-                                    AttachThreadInput(windowThreadProcessId, currentThreadId, false);*/
-                                    if (true)
+                                    ShowWindow(hwnd, SW_RESTORE);
+
+                                    if (!SetForegroundWindow(hwnd))
                                     {
-                                        HANDLE tokenHandle;
-                                        if (OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &tokenHandle))
+                                        auto errorCode = GetLastError();
+                                        Logger::error(L"SetForegroundWindow", errorCode, L"PowerToys - Interop");
+                                    }
+                                    else
+                                    {
+                                        consoleShowSuccess = true;
+                                    }
+                                }
+
+                                // Detach from the console
+                                FreeConsole();
+                            }
+
+                            if (consoleShowSuccess)
+                            {
+                                return;
+                            }
+
+                            // consoleShowSuccess failed, try to just show them all (if they have a title)!.
+                            hwnd = FindWindow(nullptr, nullptr);
+
+                            while (hwnd)
+                            {
+                                DWORD pidForHwind;
+                                GetWindowThreadProcessId(hwnd, &pidForHwind);
+                                if (targetPid == pidForHwind)
+                                {
+                                    int length = GetWindowTextLength(hwnd);
+
+                                    if (length > 0)
+                                    {
+                                        ShowWindow(hwnd, SW_RESTORE);
+
+                                        // hwnd is the window handle with targetPid
+                                        if (!SetForegroundWindow(hwnd))
                                         {
-                                            TOKEN_PRIVILEGES tokenPrivileges;
-                                            LookupPrivilegeValue(nullptr, SE_DEBUG_NAME, &tokenPrivileges.Privileges[0].Luid);
-                                            tokenPrivileges.PrivilegeCount = 1;
-                                            tokenPrivileges.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-                                            if (AdjustTokenPrivileges(tokenHandle, FALSE, &tokenPrivileges, sizeof(TOKEN_PRIVILEGES), nullptr, nullptr))
-                                            {
-                                                AllowSetForegroundWindow(pid);
-                                                SetForegroundWindow(hwnd);
-
-                                                ShowWindow(hwnd, SW_RESTORE);
-                                                ShowWindow(hwnd, SW_SHOWNORMAL);
-
-                                                ShowWindowAsync(hwnd, SW_RESTORE);
-
-                                                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-
-                                                SetForegroundWindow(hwnd);
-
-                                                SetActiveWindow(hwnd);
-                                                BringWindowToTop(hwnd);
-                                                SetActiveWindow(hwnd);
-                                                //AttachConsole(pid);
-                                            }
+                                            auto errorCode = GetLastError();
+                                            Logger::error(L"SetForegroundWindow", errorCode, L"PowerToys - Interop");
                                         }
                                     }
                                 }
+                                hwnd = FindWindowEx(NULL, hwnd, NULL, NULL);
                             }
                         }
                         else
                         {
-                            std::wstring executable_args = fmt::format(L"\"{}\"", executable_path);
+                            std::wstring executable_args = fmt::format(L"\"{}\" \"{}\"", runProgramSpec.args, runProgramSpec.args);
                             STARTUPINFO startup_info = { sizeof(startup_info) };
                             PROCESS_INFORMATION process_info = { 0 };
-                            CreateProcessW(executable_path.c_str(), executable_args.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup_info, &process_info);
+
+                            auto currentDir = runProgramSpec.dir.c_str();
+                            if (runProgramSpec.dir == L"")
+                            {
+                                currentDir = nullptr;
+                            }
+
+                            CreateProcessW(executable_path.c_str(), executable_args.data(), nullptr, nullptr, FALSE, 0, nullptr, currentDir, &startup_info, &process_info);
                         }
-
-                        //DWORD pid;
-                        //HANDLE hProc = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, L"myprogram.exe");
-                        //if (hProc)
-                        //{
-                        //    GetProcessId(hProc, &pid);
-                        //    CloseHandle(hProc);
-                        //}
-
-                        //DWORD pid = process_info.dwProcessId;
-                        //AttachConsole(pid);
-                        //SetForegroundWindow(pid);
                     }
                 }
             }
         }
+    }
+
+    struct handle_data
+    {
+        unsigned long process_id;
+        HWND window_handle;
+    };
+
+    HWND find_main_window(unsigned long process_id)
+    {
+        handle_data data;
+        data.process_id = process_id;
+        data.window_handle = 0;
+        EnumWindows(enum_windows_callback, reinterpret_cast<LPARAM>(&data));
+        return data.window_handle;
+    }
+
+    BOOL CALLBACK enum_windows_callback(HWND handle, LPARAM lParam)
+    {
+        //handle_data& data = *(handle_data*)lParam;
+        handle_data& data = *reinterpret_cast<handle_data*>(lParam);
+        unsigned long process_id = 0;
+        GetWindowThreadProcessId(handle, &process_id);
+        if (data.process_id != process_id || !(GetWindow(handle, GW_OWNER) == static_cast<HWND>(0) && IsWindowVisible(handle)))
+            return TRUE;
+        data.window_handle = handle;
+        return FALSE;
     }
 
     std::wstring GetFileNameFromPath(const std::wstring& fullPath)

@@ -17,15 +17,20 @@ public:
     DWORD actionKey = {};
 
     std::wstring path = L"";
+    std::wstring args = L"";
+    std::wstring dir = L"";
+
     std::vector<DWORD> keys;
 
     RunProgramSpec2() = default;
 
     // Constructor to initialize Shortcut from it's virtual key code string representation.
-    RunProgramSpec2(const std::wstring& shortcutVK);
+    RunProgramSpec2(const std::wstring& shortcutVK, const std::wstring& targetAppSpec);
 
 private:
-    std::vector<std::wstring> splitwstring(const std::wstring& input, wchar_t delimiter);
+    std::vector<std::wstring> splitwstringOnChar(const std::wstring& input, wchar_t delimiter);
+
+    std::vector<std::wstring> splitwStringOnString(const std::wstring& str, const std::wstring& delimiter, bool ignoreEmpty);
 
     bool RunProgramSpec2::SetKey(const DWORD input);
 };

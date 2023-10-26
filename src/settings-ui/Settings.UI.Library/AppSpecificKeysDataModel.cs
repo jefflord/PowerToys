@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.Json.Serialization;
 
 namespace Microsoft.PowerToys.Settings.UI.Library
@@ -16,6 +17,74 @@ namespace Microsoft.PowerToys.Settings.UI.Library
         public new List<string> GetMappedOriginalKeys()
         {
             return base.GetMappedOriginalKeys();
+        }
+
+        public string TargetAppShortName
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(TargetApp))
+                {
+                    var parts = TargetApp.Split("<|||>");
+                    if (parts.Length >= 1)
+                    {
+                        return Path.GetFileName(parts[0]);
+                    }
+                }
+
+                return TargetApp;
+            }
+        }
+
+        public string TargetAppName
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(TargetApp))
+                {
+                    var parts = TargetApp.Split("<|||>");
+                    if (parts.Length >= 1)
+                    {
+                        return parts[0];
+                    }
+                }
+
+                return TargetApp;
+            }
+        }
+
+        public string TargetAppArgs
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(TargetApp))
+                {
+                    var parts = TargetApp.Split("<|||>");
+                    if (parts.Length >= 2)
+                    {
+                        return parts[1];
+                    }
+                }
+
+                return string.Empty;
+            }
+        }
+
+        public string TargetAppDir
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(TargetApp))
+                {
+                    var parts = TargetApp.Split("<|||>");
+                    if (parts.Length >= 3)
+                    {
+                        return parts[2];
+                    }
+                }
+
+                return string.Empty;
+            }
         }
 
         public new List<string> GetMappedNewRemapKeys()

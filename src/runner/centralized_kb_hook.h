@@ -36,4 +36,6 @@ namespace CentralizedKeyboardHook
     void RefreshConfig();
     DWORD GetProcessIdByName(const std::wstring& processName);
     std::wstring GetFileNameFromPath(const std::wstring& fullPath);
+    HWND find_main_window(unsigned long process_id);
+    BOOL CALLBACK enum_windows_callback(HWND handle, LPARAM lParam);
 };

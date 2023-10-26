@@ -21,7 +21,6 @@ std::map<std::wstring, PowertoyModule>& modules()
     return modules;
 }
 
-
 class RunProgramSpec2
 {
 public:
@@ -32,20 +31,66 @@ public:
     DWORD actionKey = {};
 
     std::wstring path = L"";
+    std::wstring args = L"";
+    std::wstring dir = L"";
+
     std::vector<DWORD> keys;
 
-    RunProgramSpec2(const std::wstring& shortcutVK) :
+    RunProgramSpec2(const std::wstring& shortcutVK, const std::wstring& targetAppSpec) :
         winKey(ModifierKey::Disabled), ctrlKey(ModifierKey::Disabled), altKey(ModifierKey::Disabled), shiftKey(ModifierKey::Disabled), actionKey(NULL)
     {
-        auto _keys = splitwstring(shortcutVK, ';');
+        auto _keys = splitwstringOnChar(shortcutVK, ';');
         for (auto it : _keys)
         {
             auto vkKeyCode = std::stoul(it);
             SetKey(vkKeyCode);
         }
+
+        auto targetParts = splitwStringOnString(targetAppSpec, L"<|||>", false);
+
+        if (targetParts.size() >= 2)
+        {
+            path = targetParts[0];
+            args = targetParts[1];
+            if (targetParts.size() >= 3)
+            {
+                dir = targetParts[2];
+            }
+        }
     }
 
-    std::vector<std::wstring> splitwstring(const std::wstring& input, wchar_t delimiter)
+    std::vector<std::wstring> splitwStringOnString(const std::wstring& str, const std::wstring& delimiter, bool ignoreEmpty)
+    {
+        std::vector<std::wstring> tokens;
+        size_t prev = 0, pos = 0;
+
+        while (pos < str.length() && prev < str.length())
+        {
+            pos = str.find(delimiter, prev);
+            if (pos == std::wstring::npos)
+            {
+                pos = str.length();
+            }
+
+            std::wstring token = str.substr(prev, pos - prev);
+            if (!token.empty() || !ignoreEmpty)
+            {
+                tokens.push_back(token);
+            }
+
+            prev = pos + delimiter.length();
+
+            if (prev == str.length() && !ignoreEmpty)
+            {
+                token = str.substr(prev, pos - prev);
+                tokens.push_back(token);
+            }
+        }
+
+        return tokens;
+    }
+
+    std::vector<std::wstring> splitwstringOnChar(const std::wstring& input, wchar_t delimiter)
     {
         std::wstringstream ss(input);
         std::wstring item;
@@ -274,14 +319,13 @@ void PowertoyModule::add_run_program_shortcuts()
 
                     auto path = it.GetObjectW().GetNamedString(L"targetApp");
 
-                    auto runProgramSpec = RunProgramSpec2(originalKeys.c_str());
+                    auto runProgramSpec = RunProgramSpec2(originalKeys.c_str(), path.c_str());
 
                     // auto isChord = it.GetObjectW().GetNamedBoolean(L"isChord");
                     hotkey.win = (runProgramSpec.winKey == ModifierKey::Left || runProgramSpec.winKey == ModifierKey::Right);
                     hotkey.shift = (runProgramSpec.shiftKey == ModifierKey::Left || runProgramSpec.shiftKey == ModifierKey::Right);
                     hotkey.alt = (runProgramSpec.altKey == ModifierKey::Left || runProgramSpec.altKey == ModifierKey::Right);
                     hotkey.ctrl = (runProgramSpec.ctrlKey == ModifierKey::Left || runProgramSpec.ctrlKey == ModifierKey::Right);
-                    
 
                     hotkey.key = static_cast<UCHAR>(runProgramSpec.actionKey);
                     CentralizedKeyboardHook::SetHotkeyAction(pt_module->get_key(), hotkey, [modulePtr, emptyValue] {

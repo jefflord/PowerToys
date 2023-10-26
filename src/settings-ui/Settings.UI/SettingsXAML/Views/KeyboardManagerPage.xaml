@@ -229,7 +229,7 @@
                                             <Border.Background>
                                                 <SolidColorBrush Opacity="0.3" Color="{ThemeResource SystemAccentColor}" />
                                             </Border.Background>
-                                            <TextBlock Text="{x:Bind TargetApp}" />
+                                            <TextBlock Text="{x:Bind TargetAppShortName}" />
                                         </Border>
                                     </StackPanel>
                                 </controls:SettingsCard>

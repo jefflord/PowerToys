@@ -37,8 +37,16 @@ private:
     // Function to set the accessible names for all the controls in a row
     static void UpdateAccessibleNames(StackPanel sourceColumn, StackPanel mappedToColumn, TextBox targetAppTextBox, Button deleteButton, int rowIndex);
 
-public:
+    // Needed to parse the targetApp string
+    static std::vector<std::wstring> RunProgramControl::splitString(const std::wstring& str, const std::wstring& delimiter, bool ignoreEmpty);
 
+    // Needed to clean some strings
+    static void removeChars(std::wstring& str, const wchar_t* removeList);
+
+    // Wrapper to clean some strings
+    static void RunProgramControl::removeQuotes(std::wstring& str);
+
+public:
     // Handle to the current Edit RunProgram Window
     static HWND editRunProgramsWindowHandle;
 
@@ -52,7 +60,7 @@ public:
     std::vector<std::unique_ptr<KeyDropDownControl>> keyDropDownControlObjects;
 
     // constructor
-    RunProgramControl(StackPanel table, StackPanel row, const int colIndex, TextBox targetApp);
+    RunProgramControl(StackPanel table, StackPanel row, const int colIndex, TextBox targetApp, TextBox targetAppArgs, TextBox targetAppDir);
 
     // Function to add a new row to the runProgram table. If the originalKeys and newKeys args are provided, then the displayed runPrograms are set to those values.
     static void AddNewRunProgramControlRow(StackPanel& parent, std::vector<std::vector<std::unique_ptr<RunProgramControl>>>& keyboardRemapControlObjects, const Shortcut& originalKeys = Shortcut(), const std::wstring& targetAppName = L"");
@@ -61,5 +69,5 @@ public:
     StackPanel GetRunProgramControl();
 
     // Function to create the detect runProgram UI window
-    static void CreateDetectRunProgramWindow(winrt::Windows::Foundation::IInspectable const& sender, XamlRoot xamlRoot, KBMEditor::KeyboardManagerState& keyboardManagerState, const int colIndex, StackPanel table, std::vector<std::unique_ptr<KeyDropDownControl>>& keyDropDownControlObjects, StackPanel controlLayout, TextBox targetApp, bool isHybridControl, bool isSingleKeyWindow, HWND parentWindow, RemapBuffer& remapBuffer);
+    static void CreateDetectRunProgramWindow(winrt::Windows::Foundation::IInspectable const& sender, XamlRoot xamlRoot, KBMEditor::KeyboardManagerState& keyboardManagerState, const int colIndex, StackPanel table, std::vector<std::unique_ptr<KeyDropDownControl>>& keyDropDownControlObjects, StackPanel controlLayout, TextBox targetApp, TextBox targetAppArgs, TextBox targetAppDir, bool isHybridControl, bool isSingleKeyWindow, HWND parentWindow, RemapBuffer& remapBuffer);
 };

@@ -43,7 +43,7 @@ ShortcutControl::ShortcutControl(StackPanel table, StackPanel row, const int col
 
     shortcutControlLayout.as<StackPanel>().Children().Append(typeShortcut.as<Button>());
     shortcutControlLayout.as<StackPanel>().Children().Append(shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>());
-    KeyDropDownControl::AddDropDown(table, row, shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), colIndex, shortcutRemapBuffer, keyDropDownControlObjects, targetApp, isHybridControl, false);
+    KeyDropDownControl::AddDropDown(table, row, shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), colIndex, shortcutRemapBuffer, keyDropDownControlObjects, targetApp, nullptr, nullptr, isHybridControl, false);
     try
     {
         // If a layout update has been triggered by other methods (e.g.: adapting to zoom level), this may throw an exception.
@@ -63,7 +63,7 @@ void ShortcutControl::SetAccessibleNameForTextBox(TextBox targetAppTextBox, int 
     {
         targetAppTextBoxAccessibleName += GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_ALLAPPS);
     }
-    
+
     targetAppTextBox.SetValue(Automation::AutomationProperties::NameProperty(), box_value(targetAppTextBoxAccessibleName));
 }
 
@@ -145,8 +145,8 @@ void ShortcutControl::AddNewShortcutControlRow(StackPanel& parent, std::vector<s
         }
 
         // Validate both set of drop downs
-        KeyDropDownControl::ValidateShortcutFromDropDownList(parent, row, keyboardRemapControlObjects[rowIndex][0]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), 0, ShortcutControl::shortcutRemapBuffer, keyboardRemapControlObjects[rowIndex][0]->keyDropDownControlObjects, targetAppTextBox, false, false);
-        KeyDropDownControl::ValidateShortcutFromDropDownList(parent, row, keyboardRemapControlObjects[rowIndex][1]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), 1, ShortcutControl::shortcutRemapBuffer, keyboardRemapControlObjects[rowIndex][1]->keyDropDownControlObjects, targetAppTextBox, true, false);
+        KeyDropDownControl::ValidateShortcutFromDropDownList(parent, row, keyboardRemapControlObjects[rowIndex][0]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), 0, ShortcutControl::shortcutRemapBuffer, keyboardRemapControlObjects[rowIndex][0]->keyDropDownControlObjects, targetAppTextBox, nullptr, nullptr, false, false);
+        KeyDropDownControl::ValidateShortcutFromDropDownList(parent, row, keyboardRemapControlObjects[rowIndex][1]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), 1, ShortcutControl::shortcutRemapBuffer, keyboardRemapControlObjects[rowIndex][1]->keyDropDownControlObjects, targetAppTextBox, nullptr, nullptr, true, false);
 
         // Reset the buffer based on the selected drop down items
         std::get<Shortcut>(shortcutRemapBuffer[rowIndex].first[0]).SetKeyCodes(KeyDropDownControl::GetSelectedCodesFromStackPanel(keyboardRemapControlObjects[rowIndex][0]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>()));
@@ -261,7 +261,7 @@ void ShortcutControl::AddNewShortcutControlRow(StackPanel& parent, std::vector<s
     {
         // change to load app name
         shortcutRemapBuffer.push_back(std::make_pair<RemapBufferItem, std::wstring>(RemapBufferItem{ Shortcut(), Shortcut() }, std::wstring(targetAppName)));
-        KeyDropDownControl::AddShortcutToControl(originalKeys, parent, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][0]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), *keyboardManagerState, 0, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][0]->keyDropDownControlObjects, shortcutRemapBuffer, row, targetAppTextBox, false, false);
+        KeyDropDownControl::AddShortcutToControl(originalKeys, parent, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][0]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), *keyboardManagerState, 0, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][0]->keyDropDownControlObjects, shortcutRemapBuffer, row, targetAppTextBox, nullptr, nullptr, false, false);
 
         if (newKeys.index() == 0)
         {
@@ -269,7 +269,7 @@ void ShortcutControl::AddNewShortcutControlRow(StackPanel& parent, std::vector<s
         }
         else
         {
-            KeyDropDownControl::AddShortcutToControl(std::get<Shortcut>(newKeys), parent, keyboardRemapControlObjects.back()[1]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), *keyboardManagerState, 1, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->keyDropDownControlObjects, shortcutRemapBuffer, row, targetAppTextBox, true, false);
+            KeyDropDownControl::AddShortcutToControl(std::get<Shortcut>(newKeys), parent, keyboardRemapControlObjects.back()[1]->shortcutDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), *keyboardManagerState, 1, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->keyDropDownControlObjects, shortcutRemapBuffer, row, targetAppTextBox, nullptr, nullptr, true, false);
         }
     }
     else
@@ -327,7 +327,7 @@ void ShortcutControl::CreateDetectShortcutWindow(winrt::Windows::Foundation::IIn
         if (!detectedShortcutKeys.IsEmpty())
         {
             // The shortcut buffer gets set in this function
-            KeyDropDownControl::AddShortcutToControl(detectedShortcutKeys, table, linkedShortcutVariableSizedWrapGrid, keyboardManagerState, colIndex, keyDropDownControlObjects, remapBuffer, row, targetApp, isHybridControl, isSingleKeyWindow);
+            KeyDropDownControl::AddShortcutToControl(detectedShortcutKeys, table, linkedShortcutVariableSizedWrapGrid, keyboardManagerState, colIndex, keyDropDownControlObjects, remapBuffer, row, targetApp, nullptr, nullptr, isHybridControl, isSingleKeyWindow);
         }
         // Hide the type shortcut UI
         detectShortcutBox.Hide();

@@ -14,7 +14,7 @@ namespace EditorConstants
     inline const int MinimumEditShortcutsWindowHeight = 500;
     inline const int EditShortcutsTableMinWidth = 1000;
 
-    inline const int DefaultEditRunProgramsWindowWidth = 750;
+    inline const int DefaultEditRunProgramsWindowWidth = 1000;
     inline const int DefaultEditRunProgramsWindowHeight = 600;
     inline const int MinimumEditRunProgramsWindowWidth = 500;
     inline const int MinimumEditRunProgramsWindowHeight = 500;

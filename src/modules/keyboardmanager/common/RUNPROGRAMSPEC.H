@@ -16,6 +16,9 @@ public:
     DWORD actionKey = {};
 
     std::wstring path = L"";
+    std::wstring args = L"";
+    std::wstring dir = L"";
+
     std::vector<DWORD> keys;
 
     RunProgramSpec() = default;

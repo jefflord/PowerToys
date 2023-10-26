@@ -643,6 +643,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
                 _kbmItem,
                 new DashboardModuleButtonItem() { ButtonTitle = resourceLoader.GetString("KeyboardManager_RemapKeyboardButton/Header"), IsButtonDescriptionVisible = true, ButtonDescription = resourceLoader.GetString("KeyboardManager_RemapKeyboardButton/Description"), ButtonGlyph = "\uE92E", ButtonClickHandler = KbmKeyLaunchClicked },
                 new DashboardModuleButtonItem() { ButtonTitle = resourceLoader.GetString("KeyboardManager_RemapShortcutsButton/Header"), IsButtonDescriptionVisible = true, ButtonDescription = resourceLoader.GetString("KeyboardManager_RemapShortcutsButton/Description"), ButtonGlyph = "\uE92E", ButtonClickHandler = KbmShortcutLaunchClicked },
+                new DashboardModuleButtonItem() { ButtonTitle = resourceLoader.GetString("KeyboardManager_RemapRunProgramButton/Header"), IsButtonDescriptionVisible = true, ButtonDescription = resourceLoader.GetString("KeyboardManager_RemapRunProgramButton/Description"), ButtonGlyph = "\uE92E", ButtonClickHandler = KbmRunProgramShortcutLaunchClicked },
             };
             return new ObservableCollection<DashboardModuleItem>(list);
         }
@@ -821,6 +822,13 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
             var settingsUtils = new SettingsUtils();
             var kbmViewModel = new KeyboardManagerViewModel(settingsUtils, SettingsRepository<GeneralSettings>.GetInstance(settingsUtils), ShellPage.SendDefaultIPCMessage, KeyboardManagerPage.FilterRemapKeysList);
             kbmViewModel.OnEditShortcut();
+        }
+
+        private void KbmRunProgramShortcutLaunchClicked(object sender, RoutedEventArgs e)
+        {
+            var settingsUtils = new SettingsUtils();
+            var kbmViewModel = new KeyboardManagerViewModel(settingsUtils, SettingsRepository<GeneralSettings>.GetInstance(settingsUtils), ShellPage.SendDefaultIPCMessage, KeyboardManagerPage.FilterRemapKeysList);
+            kbmViewModel.OnEditRunProgram();
         }
 
         private void RegistryPreviewLaunchClicked(object sender, RoutedEventArgs e)

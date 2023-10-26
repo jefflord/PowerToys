@@ -37,7 +37,7 @@ SingleKeyRemapControl::SingleKeyRemapControl(StackPanel table, StackPanel row, c
     {
         hybridDropDownVariableSizedWrapGrid = VariableSizedWrapGrid();
         hybridDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>().Orientation(Windows::UI::Xaml::Controls::Orientation::Horizontal);
-        KeyDropDownControl::AddDropDown(table, row, hybridDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), colIndex, singleKeyRemapBuffer, keyDropDownControlObjects, nullptr, true, true);
+        KeyDropDownControl::AddDropDown(table, row, hybridDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), colIndex, singleKeyRemapBuffer, keyDropDownControlObjects, nullptr, nullptr, nullptr, true, true);
         singleKeyRemapControlLayout.as<StackPanel>().Children().Append(hybridDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>());
     }
 
@@ -124,7 +124,7 @@ void SingleKeyRemapControl::AddNewControlKeyRemapRow(StackPanel& parent, std::ve
         }
         else
         {
-            KeyDropDownControl::AddShortcutToControl(std::get<Shortcut>(newKey), parent, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->hybridDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), *keyboardManagerState, 1, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->keyDropDownControlObjects, singleKeyRemapBuffer, row, nullptr, true, true);
+            KeyDropDownControl::AddShortcutToControl(std::get<Shortcut>(newKey), parent, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->hybridDropDownVariableSizedWrapGrid.as<VariableSizedWrapGrid>(), *keyboardManagerState, 1, keyboardRemapControlObjects[keyboardRemapControlObjects.size() - 1][1]->keyDropDownControlObjects, singleKeyRemapBuffer, row, nullptr, nullptr, nullptr, true, true);
         }
     }
     else
@@ -183,7 +183,7 @@ void SingleKeyRemapControl::AddNewControlKeyRemapRow(StackPanel& parent, std::ve
         {
         }
         singleKeyRemapBuffer.erase(singleKeyRemapBuffer.begin() + rowIndex);
-    
+
         // delete the SingleKeyRemapControl objects so that they get destructed
         keyboardRemapControlObjects.erase(keyboardRemapControlObjects.begin() + rowIndex);
     });

@@ -56,6 +56,13 @@ static IAsyncAction OnClickAccept(
 // Function to create the Edit RunPrograms Window
 inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::KeyboardManagerState& keyboardManagerState, MappingConfiguration& mappingConfiguration)
 {
+    
+    /*while (true)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }*/
+    
+
     Logger::trace("CreateEditRunProgramsWindowImpl()");
     auto locker = EventLocker::Get(KeyboardManagerConstants::EditorWindowEventName.c_str());
     if (!locker.has_value())
