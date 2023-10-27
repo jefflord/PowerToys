@@ -63,7 +63,7 @@ void RunProgramControl::SetAccessibleNameForTextBox(TextBox targetAppTextBox, in
     std::wstring targetAppTextBoxAccessibleName = GET_RESOURCE_STRING(IDS_AUTOMATIONPROPERTIES_ROW) + std::to_wstring(rowIndex) + L", " + GET_RESOURCE_STRING(IDS_EDITRUNPROGRAMS_PROGRAMNAME);
     if (targetAppTextBox.Text() == L"")
     {
-        targetAppTextBoxAccessibleName += GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_ALLAPPS);
+        targetAppTextBoxAccessibleName += GET_RESOURCE_STRING(IDS_RUNPROGRAMSHORTCUTS_APPTORUN);
     }
 
     targetAppTextBox.SetValue(Automation::AutomationProperties::NameProperty(), box_value(targetAppTextBoxAccessibleName));
@@ -139,7 +139,6 @@ void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vect
 
     auto runProgramParts = RunProgramControl::splitString(targetAppName, L"<|||>", false);
 
-
     auto targetAppNamePart = targetAppName;
     auto targetAppArgsPart = L"";
     auto targetAppDirPart = L"";
@@ -204,15 +203,15 @@ void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vect
     //row.Children().Append(target);
 
     targetAppTextBox.Width(EditorConstants::RunProgramTableDropDownWidth);
-    targetAppTextBox.PlaceholderText(KeyboardManagerEditorStrings::DefaultAppName());
+    targetAppTextBox.PlaceholderText(GET_RESOURCE_STRING(IDS_RUNPROGRAMSHORTCUTS_APPTORUN));
     targetAppTextBox.Text(targetAppNamePart);
 
     targetAppArgsTextBox.Width(EditorConstants::RunProgramTableDropDownWidth);
-    targetAppArgsTextBox.PlaceholderText(KeyboardManagerEditorStrings::DefaultAppName());
+    targetAppArgsTextBox.PlaceholderText(GET_RESOURCE_STRING(IDS_RUNPROGRAMSHORTCUTS_APPTORUNARGS));
     targetAppArgsTextBox.Text(targetAppArgsPart);
 
     targetAppDirTextBox.Width(EditorConstants::RunProgramTableDropDownWidth);
-    targetAppDirTextBox.PlaceholderText(KeyboardManagerEditorStrings::DefaultAppName());
+    targetAppDirTextBox.PlaceholderText(GET_RESOURCE_STRING(IDS_RUNPROGRAMSHORTCUTS_APPTORUNSTARTINDIR));
     targetAppDirTextBox.Text(targetAppDirPart);
 
     // GotFocus handler will be called whenever the user tabs into or clicks on the textbox
@@ -332,8 +331,10 @@ void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vect
             row.Background(i % 2 ? brush : Media::SolidColorBrush(Colors::Transparent()));
             StackPanel sourceCol = row.Children().GetAt(0).as<StackPanel>();
             StackPanel targetCol = row.Children().GetAt(2).as<StackPanel>();
+
             TextBox targetApp = row.Children().GetAt(3).as<StackPanel>().Children().GetAt(0).as<StackPanel>().Children().GetAt(0).as<TextBox>();
-            Button delButton = row.Children().GetAt(4).as<StackPanel>().Children().GetAt(0).as<Button>();
+            Button delButton = row.Children().GetAt(5).as<StackPanel>().Children().GetAt(0).as<Button>();
+
             UpdateAccessibleNames(sourceCol, targetCol, targetApp, delButton, i);
         }
 
@@ -356,9 +357,9 @@ void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vect
     deleteRunProgram.SetValue(Automation::AutomationProperties::NameProperty(), box_value(GET_RESOURCE_STRING(IDS_DELETE_REMAPPING_BUTTON)));
 
     // Add tooltip for delete button which would appear on hover
-    ToolTip deleteRunProgramtoolTip;
-    deleteRunProgramtoolTip.Content(box_value(GET_RESOURCE_STRING(IDS_DELETE_REMAPPING_BUTTON)));
-    ToolTipService::SetToolTip(deleteRunProgram, deleteRunProgramtoolTip);
+    ToolTip deleteRunProgramToolTip;
+    deleteRunProgramToolTip.Content(box_value(GET_RESOURCE_STRING(IDS_DELETE_REMAPPING_BUTTON)));
+    ToolTipService::SetToolTip(deleteRunProgram, deleteRunProgramToolTip);
 
     StackPanel deleteRunProgramContainer = StackPanel();
     deleteRunProgramContainer.Children().Append(deleteRunProgram);

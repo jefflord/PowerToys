@@ -172,6 +172,9 @@
   <data name="EditShortcuts_TargetAppHeader" xml:space="preserve">
     <value>Target app:</value>
   </data>
+  <data name="EditRunProgramShortcuts_TargetAppHeader" xml:space="preserve">
+    <value>Target app, optional arguments and start in directory:</value>
+  </data>	
   <data name="EditShortcuts_RunProgramAppHeader" xml:space="preserve">
     <value>Program:</value>
   </data>	
@@ -229,7 +232,16 @@
   <data name="EditShortcuts_AllApps" xml:space="preserve">
     <value>All apps</value>
   </data>
-  <data name="ErrorMessage_RemapSuccessful" xml:space="preserve">
+  <data name="RunProgramShortcuts_AppToRun" xml:space="preserve">
+    <value>App to run</value>
+  </data>
+  <data name="RunProgramShortcuts_AppToRunArgs" xml:space="preserve">
+    <value>Arguments</value>
+  </data>
+  <data name="RunProgramShortcuts_AppToRunStartInDir" xml:space="preserve">
+    <value>Start directory</value>
+  </data>
+	<data name="ErrorMessage_RemapSuccessful" xml:space="preserve">
     <value>Remapping successful</value>
   </data>
   <data name="ErrorMessage_RemapUnsuccessful" xml:space="preserve">

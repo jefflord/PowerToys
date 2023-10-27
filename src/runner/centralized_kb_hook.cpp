@@ -370,40 +370,44 @@ namespace CentralizedKeyboardHook
                     {
                         std::wstring executable_path = runProgramSpec.path;
                         auto fileNamePart = GetFileNameFromPath(executable_path);
-                        auto targetPid = GetProcessIdByName(fileNamePart);
-                        auto consoleShowSuccess = false;
-                        auto showByMainWindow = false;
-
-                        HWND hwnd = find_main_window(targetPid);
-                        if (hwnd != NULL)
+                        DWORD targetPid = 0;
+                        
+                        if (fileNamePart != L"explorer.exe")
                         {
-                            ShowWindow(hwnd, SW_RESTORE);
-
-                            if (!SetForegroundWindow(hwnd))
-                            {
-                                auto errorCode = GetLastError();
-                                Logger::error(L"SetForegroundWindow", errorCode, L"PowerToys - Interop");
-                            }
-                            else
-                            {
-                                showByMainWindow = true;
-                            }
+                            targetPid = GetProcessIdByName(fileNamePart);
                         }
 
-                        if (showByMainWindow)
-                        {
-                            return;
-                        }
-
-                        // showByMainWindow failed, try by console.
+                        
                         if (targetPid != 0)
                         {
+                            // a good place to look for this...
+                            // https://github.com/ritchielawrence/cmdow
+
+
+                            // try by main window.
+                            HWND hwnd = find_main_window(targetPid);
+                            if (hwnd != NULL)
+                            {
+                                ShowWindow(hwnd, SW_RESTORE);
+
+                                if (!SetForegroundWindow(hwnd))
+                                {
+                                    auto errorCode = GetLastError();
+                                    Logger::error(L"SetForegroundWindow", errorCode, L"PowerToys - Interop");
+                                }
+                                else
+                                {
+                                    return;
+                                }
+                            }
+                            
+                            // try by console.
                             hwnd = FindWindow(nullptr, nullptr);
                             if (AttachConsole(targetPid))
                             {
                                 // Get the console window handle
                                 hwnd = GetConsoleWindow();
-
+                                auto showByConsoleSuccess = false;
                                 if (hwnd != NULL)
                                 {
                                     ShowWindow(hwnd, SW_RESTORE);
@@ -415,27 +419,27 @@ namespace CentralizedKeyboardHook
                                     }
                                     else
                                     {
-                                        consoleShowSuccess = true;
+                                        showByConsoleSuccess = true;
                                     }
                                 }
 
                                 // Detach from the console
                                 FreeConsole();
+                                if (showByConsoleSuccess)
+                                {
+                                    return;
+                                }
                             }
 
-                            if (consoleShowSuccess)
-                            {
-                                return;
-                            }
 
-                            // consoleShowSuccess failed, try to just show them all (if they have a title)!.
+                            // try to just show them all (if they have a title)!.
                             hwnd = FindWindow(nullptr, nullptr);
 
                             while (hwnd)
                             {
-                                DWORD pidForHwind;
-                                GetWindowThreadProcessId(hwnd, &pidForHwind);
-                                if (targetPid == pidForHwind)
+                                DWORD pidForHwnd;
+                                GetWindowThreadProcessId(hwnd, &pidForHwnd);
+                                if (targetPid == pidForHwnd)
                                 {
                                     int length = GetWindowTextLength(hwnd);
 
@@ -510,19 +514,6 @@ namespace CentralizedKeyboardHook
         }
         return fullPath;
     }
-
-    //std::wstring GetFileNameFromPath(const std::wstring& fullPath)
-    //{
-    //    std::filesystem::path fullpath(fullPath);
-    //    auto filename = fullpath.filename().wstring();
-    //    return filename;
-    //    /*
-
-    //    wchar_t fileName[MAX_PATH];
-    //    wcscpy_s(fileName, MAX_PATH, fullPath.c_str());
-    //    PathFindFileName(fullPath.c_str());
-    //    return std::wstring(fileName);*/
-    //}
 
     DWORD GetProcessIdByName(const std::wstring& processName)
     {

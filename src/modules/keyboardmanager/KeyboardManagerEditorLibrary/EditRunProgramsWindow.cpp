@@ -199,7 +199,7 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
 
     // Third header textblock in the header row of the runProgram table
     TextBlock targetAppHeader;
-    targetAppHeader.Text(GET_RESOURCE_STRING(IDS_EDITSHORTCUTS_TARGETAPPHEADER));
+    targetAppHeader.Text(GET_RESOURCE_STRING(IDS_EDITRUNPROGRAMSHORTCUTS_TARGETAPPHEADER));
     targetAppHeader.FontWeight(Text::FontWeights::Bold());
     targetAppHeader.HorizontalAlignment(HorizontalAlignment::Center);
 
@@ -231,20 +231,8 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
     // Set keyboard manager UI state so that runProgram remaps are not applied while on this window
     keyboardManagerState.SetUIState(KBMEditor::KeyboardManagerUIState::RunProgramsWindowActivated, _hWndEditRunProgramsWindow);
 
-    // Load existing os level runPrograms into UI
-    // Create copy of the remaps to avoid concurrent access
-    // RunProgramRemapTable osLevelRunProgramReMapCopy = mappingConfiguration.osLevelRunProgramReMap;
-
-    //// Add all
-    //for (const auto& it : osLevelRunProgramReMapCopy)
-    //{
-    //    // TODO: JLO FIX targetShortcut
-    //    RunProgramControl::AddNewRunProgramControlRow(runProgramTable, keyboardRemapControlObjects, it.first, it.second.targetShortcut);
-    //}
-
     // Load existing app-specific runPrograms into UI
-    // Create copy of the remaps to avoid concurrent access
-    //AppSpecificShortcutRemapTable appSpecificRunProgramReMapCopy = mappingConfiguration.appSpecificShortcutReMap;
+    // Create copy of the remaps to avoid concurrent access    
     AppSpecificShortcutRemapTable appSpecificRunProgramReMapCopy = mappingConfiguration.appSpecificRunProgramReMap;
 
     // Iterate through all the apps

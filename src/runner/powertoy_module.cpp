@@ -260,6 +260,7 @@ void PowertoyModule::update_hotkeys()
     CentralizedKeyboardHook::ClearModuleHotkeys(pt_module->get_key());
 
     size_t hotkeyCount = pt_module->get_hotkeys(nullptr, 0);
+
     std::vector<PowertoyModuleIface::Hotkey> hotkeys(hotkeyCount);
     pt_module->get_hotkeys(hotkeys.data(), hotkeyCount);
 
@@ -316,7 +317,6 @@ void PowertoyModule::add_run_program_shortcuts()
                 try
                 {
                     auto originalKeys = it.GetObjectW().GetNamedString(KeyboardManagerConstants::OriginalKeysSettingName);
-
                     auto path = it.GetObjectW().GetNamedString(L"targetApp");
 
                     auto runProgramSpec = RunProgramSpec2(originalKeys.c_str(), path.c_str());
