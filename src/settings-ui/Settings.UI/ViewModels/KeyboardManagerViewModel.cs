@@ -210,8 +210,6 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
                 if (_profile != null)
                 {
                     return _profile.RemapShortcuts.RunProgramShortcuts;
-
-                    // CombineShortcutLists(_profile.RemapShortcuts.AppSpecificRemapShortcuts, new List<AppSpecificKeysDataModel>());
                 }
                 else
                 {

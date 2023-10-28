@@ -10,6 +10,9 @@ namespace CommonSharedConstants
     // Fake key code to represent VK_WIN.
     inline const DWORD VK_WIN_BOTH = 0x104;
 
+    // Component separator for KBM Run Program pars.
+    const wchar_t KBM_RUN_PROGRAM_DELIMITER[] = L"<|||>";
+
     const wchar_t APPDATA_PATH[] = L"Microsoft\\PowerToys";
 
     // Path to the event used by PowerLauncher

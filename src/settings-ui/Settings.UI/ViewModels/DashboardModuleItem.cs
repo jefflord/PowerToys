@@ -52,6 +52,14 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
             get => _remapShortcuts;
             set => _remapShortcuts = value;
         }
+
+        private List<AppSpecificKeysDataModel> _runProgramShortcuts = new List<AppSpecificKeysDataModel>();
+
+        public List<AppSpecificKeysDataModel> RunProgramShortcuts
+        {
+            get => _runProgramShortcuts;
+            set => _runProgramShortcuts = value;
+        }
     }
 
     public class DashboardModuleItem : INotifyPropertyChanged

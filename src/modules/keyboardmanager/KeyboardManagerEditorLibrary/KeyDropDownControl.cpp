@@ -170,11 +170,6 @@ std::pair<ShortcutErrorType, int> KeyDropDownControl::ValidateShortcutSelection(
             appName = targetApp.Text().c_str();
         }
 
-        /*if (targetAppArgs != nullptr)
-        {
-            appName += L"<|||>" + targetAppArgs.Text().c_str();
-        }*/
-
         // Validate shortcut element
         validationResult = BufferValidationHelpers::ValidateShortcutBufferElement(rowIndex, colIndex, dropDownIndex, selectedCodes, appName, isHybridControl, shortcutRemapBuffer, dropDownFound);
 
@@ -274,9 +269,9 @@ void KeyDropDownControl::SetSelectionHandler(StackPanel& table, StackPanel row, 
             {
                 std::wstring newText = targetApp.Text().c_str();
 
-                newText.append(L"<|||>");
+                newText.append(CommonSharedConstants::KBM_RUN_PROGRAM_DELIMITER);
                 newText.append(targetAppArgs.Text().c_str());
-                newText.append(L"<|||>");
+                newText.append(CommonSharedConstants::KBM_RUN_PROGRAM_DELIMITER);
                 newText.append(targetAppDir.Text().c_str());
 
                 shortcutRemapBuffer[validationResult.second].second = newText;

@@ -384,6 +384,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
             KeyboardManagerProfile kbmProfile = GetKBMProfile();
             _kbmItem.RemapKeys = kbmProfile?.RemapKeys.InProcessRemapKeys;
             _kbmItem.RemapShortcuts = KeyboardManagerViewModel.CombineShortcutLists(kbmProfile?.RemapShortcuts.GlobalRemapShortcuts, kbmProfile?.RemapShortcuts.AppSpecificRemapShortcuts);
+            _kbmItem.RunProgramShortcuts = kbmProfile?.RemapShortcuts.RunProgramShortcuts;
             dispatcher.Invoke(new Action(() => UpdateKBMItems()));
         }
 
@@ -391,6 +392,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         {
             _kbmItem.NotifyPropertyChanged(nameof(_kbmItem.RemapKeys));
             _kbmItem.NotifyPropertyChanged(nameof(_kbmItem.RemapShortcuts));
+            _kbmItem.NotifyPropertyChanged(nameof(_kbmItem.RunProgramShortcuts));
         }
 
         private KeyboardManagerProfile GetKBMProfile()
@@ -637,7 +639,7 @@ namespace Microsoft.PowerToys.Settings.UI.ViewModels
         private ObservableCollection<DashboardModuleItem> GetModuleItemsKeyboardManager()
         {
             KeyboardManagerProfile kbmProfile = GetKBMProfile();
-            _kbmItem = new DashboardModuleKBMItem() { RemapKeys = kbmProfile?.RemapKeys.InProcessRemapKeys, RemapShortcuts = KeyboardManagerViewModel.CombineShortcutLists(kbmProfile?.RemapShortcuts.GlobalRemapShortcuts, kbmProfile?.RemapShortcuts.AppSpecificRemapShortcuts) };
+            _kbmItem = new DashboardModuleKBMItem() { RemapKeys = kbmProfile?.RemapKeys.InProcessRemapKeys, RemapShortcuts = KeyboardManagerViewModel.CombineShortcutLists(kbmProfile?.RemapShortcuts.GlobalRemapShortcuts, kbmProfile?.RemapShortcuts.AppSpecificRemapShortcuts), RunProgramShortcuts = kbmProfile?.RemapShortcuts.RunProgramShortcuts };
             var list = new List<DashboardModuleItem>
             {
                 _kbmItem,

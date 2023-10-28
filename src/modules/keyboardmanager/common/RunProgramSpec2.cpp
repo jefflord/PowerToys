@@ -17,8 +17,7 @@ RunProgramSpec2::RunProgramSpec2(const std::wstring& shortcutVK, const std::wstr
         SetKey(vkKeyCode);
     }
 
-    
-    auto targetParts = splitwStringOnString(targetAppSpec, L"<|||>", false);
+    auto targetParts = splitwStringOnString(targetAppSpec, CommonSharedConstants::KBM_RUN_PROGRAM_DELIMITER, false);
 
     path = targetParts[0];
     args = targetParts[1];

@@ -137,7 +137,7 @@ void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vect
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }*/
 
-    auto runProgramParts = RunProgramControl::splitString(targetAppName, L"<|||>", false);
+    auto runProgramParts = RunProgramControl::splitString(targetAppName, CommonSharedConstants::KBM_RUN_PROGRAM_DELIMITER, false);
 
     auto targetAppNamePart = targetAppName;
     auto targetAppArgsPart = L"";
@@ -245,9 +245,9 @@ void RunProgramControl::AddNewRunProgramControlRow(StackPanel& parent, std::vect
 
         RunProgramControl::removeQuotes(fullTargetAppSpec);
 
-        fullTargetAppSpec.append(L"<|||>");
+        fullTargetAppSpec.append(CommonSharedConstants::KBM_RUN_PROGRAM_DELIMITER);
         fullTargetAppSpec.append(targetAppArgsTextBox.Text().c_str());
-        fullTargetAppSpec.append(L"<|||>");
+        fullTargetAppSpec.append(CommonSharedConstants::KBM_RUN_PROGRAM_DELIMITER);
         fullTargetAppSpec.append(targetAppDirTextBox.Text().c_str());
 
         TextBox tempTargetAppTextBox;

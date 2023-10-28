@@ -11,6 +11,8 @@ namespace Microsoft.PowerToys.Settings.UI.Library
 {
     public class AppSpecificKeysDataModel : KeysDataModel
     {
+        private const string KbmRunProgramDelimiter = "<|||>";
+
         [JsonPropertyName("targetApp")]
         public string TargetApp { get; set; }
 
@@ -25,7 +27,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             {
                 if (!string.IsNullOrEmpty(TargetApp))
                 {
-                    var parts = TargetApp.Split("<|||>");
+                    var parts = TargetApp.Split(KbmRunProgramDelimiter);
                     if (parts.Length >= 1)
                     {
                         return Path.GetFileName(parts[0]);
@@ -42,7 +44,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             {
                 if (!string.IsNullOrEmpty(TargetApp))
                 {
-                    var parts = TargetApp.Split("<|||>");
+                    var parts = TargetApp.Split(KbmRunProgramDelimiter);
                     if (parts.Length >= 1)
                     {
                         return parts[0];
@@ -59,7 +61,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             {
                 if (!string.IsNullOrEmpty(TargetApp))
                 {
-                    var parts = TargetApp.Split("<|||>");
+                    var parts = TargetApp.Split(KbmRunProgramDelimiter);
                     if (parts.Length >= 2)
                     {
                         return parts[1];
@@ -76,7 +78,7 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             {
                 if (!string.IsNullOrEmpty(TargetApp))
                 {
-                    var parts = TargetApp.Split("<|||>");
+                    var parts = TargetApp.Split(KbmRunProgramDelimiter);
                     if (parts.Length >= 3)
                     {
                         return parts[2];

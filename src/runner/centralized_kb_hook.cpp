@@ -228,7 +228,13 @@ namespace CentralizedKeyboardHook
     }
 
     bool getConfigInit = false;
+    bool runProgramEnabled = true;
     std::vector<RunProgramSpec2> runProgramSpecs;
+
+    void SetRunProgramEnabled(bool enabled)
+    {
+        runProgramEnabled = enabled;
+    }
 
     void RefreshConfig()
     {
@@ -317,6 +323,11 @@ namespace CentralizedKeyboardHook
 
     void handleCreateProcessHotKeysAndChords(LocalKey hotkey)
     {
+        if (!runProgramEnabled)
+        {
+            return;
+        }
+
         if (hotkey.win || hotkey.shift || hotkey.control || hotkey.alt)
         {
             setupConfig();
@@ -371,36 +382,42 @@ namespace CentralizedKeyboardHook
                         std::wstring executable_path = runProgramSpec.path;
                         auto fileNamePart = GetFileNameFromPath(executable_path);
                         DWORD targetPid = 0;
-                        
+
                         if (fileNamePart != L"explorer.exe")
                         {
                             targetPid = GetProcessIdByName(fileNamePart);
                         }
 
-                        
                         if (targetPid != 0)
                         {
                             // a good place to look for this...
                             // https://github.com/ritchielawrence/cmdow
 
-
                             // try by main window.
                             HWND hwnd = find_main_window(targetPid);
                             if (hwnd != NULL)
                             {
-                                ShowWindow(hwnd, SW_RESTORE);
-
-                                if (!SetForegroundWindow(hwnd))
+                                if (hwnd == GetForegroundWindow())
                                 {
-                                    auto errorCode = GetLastError();
-                                    Logger::error(L"SetForegroundWindow", errorCode, L"PowerToys - Interop");
+                                    ShowWindow(hwnd, SW_MINIMIZE);
+                                    return;
                                 }
                                 else
                                 {
-                                    return;
+                                    ShowWindow(hwnd, SW_RESTORE);
+
+                                    if (!SetForegroundWindow(hwnd))
+                                    {
+                                        auto errorCode = GetLastError();
+                                        Logger::error(L"SetForegroundWindow", errorCode, L"PowerToys - Interop");
+                                    }
+                                    else
+                                    {
+                                        return;
+                                    }
                                 }
                             }
-                            
+
                             // try by console.
                             hwnd = FindWindow(nullptr, nullptr);
                             if (AttachConsole(targetPid))
@@ -430,7 +447,6 @@ namespace CentralizedKeyboardHook
                                     return;
                                 }
                             }
-
 
                             // try to just show them all (if they have a title)!.
                             hwnd = FindWindow(nullptr, nullptr);

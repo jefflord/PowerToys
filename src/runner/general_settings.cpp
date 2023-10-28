@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "general_settings.h"
+#include "centralized_kb_hook.h"
 #include "auto_start_helper.h"
 #include "Generated files/resource.h"
 
@@ -159,13 +160,21 @@ void apply_general_settings(const json::JsonObject& general_configs, bool save)
                 target_enabled = gpo_rule == powertoys_gpo::gpo_rule_configured_enabled;
             }
 
+            if (name == L"Keyboard Manager")
+            {
+                CentralizedKeyboardHook::SetRunProgramEnabled(target_enabled);
+            }
+
             if (module_inst_enabled == target_enabled)
             {
-                if (name == L"Keyboard Manager" && target_enabled)
+                if (name == L"Keyboard Manager")
                 {
-                    // No state change, but KBM is still enabled, sync the hotkey state with the module state, so it can be removed for disabled modules.
-                    powertoy.add_run_program_shortcuts();
-                    powertoy.UpdateHotkeyEx();
+                    if (target_enabled)
+                    {
+                        // No state change, but KBM is still enabled, sync the hotkey state with the module state, so it can be removed for disabled modules.
+                        powertoy.add_run_program_shortcuts();
+                        powertoy.UpdateHotkeyEx();
+                    }
                 }
                 continue;
             }

@@ -46,7 +46,7 @@ public:
             SetKey(vkKeyCode);
         }
 
-        auto targetParts = splitwStringOnString(targetAppSpec, L"<|||>", false);
+        auto targetParts = splitwStringOnString(targetAppSpec, CommonSharedConstants::KBM_RUN_PROGRAM_DELIMITER, false);
 
         if (targetParts.size() >= 2)
         {

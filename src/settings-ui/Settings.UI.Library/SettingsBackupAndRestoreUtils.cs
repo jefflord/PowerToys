@@ -55,6 +55,16 @@ namespace Microsoft.PowerToys.Settings.UI.Library
             {
                 var outputBuffer = new ArrayBufferWriter<byte>();
 
+                /* Because not having "The StringEscapeHandling setting of JsonTextWriter",
+                 * see (https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/use-utf8jsonwriter)
+                 * we want to "fix" the html escaping
+                */
+
+                originalJson = JsonNode.Parse(originalJson).ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+
+                // do for both to be sure
+                newContent = JsonNode.Parse(newContent).ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+
                 using (JsonDocument jDoc1 = JsonDocument.Parse(originalJson))
                 using (JsonDocument jDoc2 = JsonDocument.Parse(newContent))
                 using (var jsonWriter = new Utf8JsonWriter(outputBuffer, new JsonWriterOptions { Indented = true }))
@@ -319,8 +329,23 @@ namespace Microsoft.PowerToys.Settings.UI.Library
                             // the settings file needs to be updated, update the real one with non-excluded stuff...
                             Logger.LogInfo($"Settings file {currentFile.Key} is different and is getting updated from backup");
 
-                            var newCurrentSettingsFile = JsonMergeHelper.Merge(File.ReadAllText(currentSettingsFiles[currentFile.Key]), settingsToRestoreJson);
-                            File.WriteAllText(currentSettingsFiles[currentFile.Key], newCurrentSettingsFile);
+                            var overwrite = false;
+                            if (backupRestoreSettings["CustomRestoreSettings"] != null && backupRestoreSettings["CustomRestoreSettings"][currentFile.Key] != null)
+                            {
+                                var customRestoreSettings = backupRestoreSettings["CustomRestoreSettings"][currentFile.Key];
+                                overwrite = customRestoreSettings["overwrite"] != null && (bool)customRestoreSettings["overwrite"];
+                            }
+
+                            if (overwrite)
+                            {
+                                File.WriteAllText(currentSettingsFiles[currentFile.Key], settingsToRestoreJson);
+                            }
+                            else
+                            {
+                                var newCurrentSettingsFile = JsonMergeHelper.Merge(File.ReadAllText(currentSettingsFiles[currentFile.Key]), settingsToRestoreJson);
+                                File.WriteAllText(currentSettingsFiles[currentFile.Key], newCurrentSettingsFile);
+                            }
+
                             anyFilesUpdated = true;
                         }
                     }
