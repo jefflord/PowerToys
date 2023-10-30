@@ -379,11 +379,10 @@ namespace CentralizedKeyboardHook
                     }
                     else
                     {
-                        std::wstring executable_path = runProgramSpec.path;
-                        auto fileNamePart = GetFileNameFromPath(executable_path);
+                        auto fileNamePart = GetFileNameFromPath(runProgramSpec.path);
                         DWORD targetPid = 0;
 
-                        if (fileNamePart != L"explorer.exe")
+                        if (fileNamePart != L"explorer.exe" && fileNamePart != L"powershell.exe" && fileNamePart != L"cmd.exe")
                         {
                             targetPid = GetProcessIdByName(fileNamePart);
                         }
@@ -476,7 +475,7 @@ namespace CentralizedKeyboardHook
                         }
                         else
                         {
-                            std::wstring executable_args = fmt::format(L"\"{}\" \"{}\"", runProgramSpec.args, runProgramSpec.args);
+                            std::wstring executable_and_args = fmt::format(L"\"{}\" {}", runProgramSpec.path, runProgramSpec.args);
                             STARTUPINFO startup_info = { sizeof(startup_info) };
                             PROCESS_INFORMATION process_info = { 0 };
 
@@ -486,7 +485,7 @@ namespace CentralizedKeyboardHook
                                 currentDir = nullptr;
                             }
 
-                            CreateProcessW(executable_path.c_str(), executable_args.data(), nullptr, nullptr, FALSE, 0, nullptr, currentDir, &startup_info, &process_info);
+                            CreateProcessW(nullptr, executable_and_args.data(), nullptr, nullptr, FALSE, 0, nullptr, currentDir, &startup_info, &process_info);
                         }
                     }
                 }

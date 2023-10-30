@@ -9,11 +9,9 @@
 #include <common/SettingsAPI/settings_helpers.h>
 #include <modules/keyboardmanager/common/Shortcut.h>
 #include <modules/keyboardmanager/common/RemapShortcut.h>
-//#include <modules/keyboardmanager/common/RunProgramSpec.h>
-//#include <modules/keyboardmanager/common/RunProgramSpec2.h>
-//#include "modules/keyboardmanager/common/RunProgramSpec2.h"
 #include <modules/keyboardmanager/common/KeyboardManagerConstants.h>
 #include <common/interop/shared_constants.h>
+#include <thread>
 
 std::map<std::wstring, PowertoyModule>& modules()
 {
