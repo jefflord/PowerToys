@@ -99,14 +99,6 @@ DWORD WINAPI WatchKeyboardManagerConfigs(LPVOID lpParameter)
     {
     }
 
-    //HANDLE PowertoyModule::hWatchDirectory = nullptr;
-
-    //// make sure we don't have more than one
-    //if (PowertoyModule::hWatchDirectory != nullptr)
-    //{
-    //    return 1;
-    //}
-
     auto directoryPath = PTSettingsHelper::get_module_save_folder_location(KeyboardManagerConstants::ModuleName);
 
     auto hWatchDirectory = CreateFile(
