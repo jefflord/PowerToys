@@ -13,9 +13,10 @@
 #include "RunProgramControl.h"
 #include "Styles.h"
 #include "UIHelpers.h"
-#include "XamlBridge.h"
+#include "XamlBridge2.h"
 #include "RunProgramErrorType.h"
 #include "EditorConstants.h"
+#include <common/Themes/theme_listener.h>
 
 using namespace winrt::Windows::Foundation;
 
@@ -34,7 +35,21 @@ HWND hwndEditRunProgramsNativeWindow = nullptr;
 std::mutex editRunProgramsWindowMutex;
 
 // Stores a pointer to the Xaml Bridge object so that it can be accessed from the window procedure
-static XamlBridge* xamlBridgePtr = nullptr;
+static XamlBridge2* xamlBridgePtr = nullptr;
+
+// Theming
+static ThemeListener theme_listener{};
+
+static void handleTheme()
+{
+    auto theme = theme_listener.AppTheme;
+    auto isDark = theme == AppTheme::Dark;
+    Logger::info(L"Theme is now {}", isDark ? L"Dark" : L"Light");
+    if (hwndEditRunProgramsNativeWindow != nullptr)
+    {
+        ThemeHelpers::SetImmersiveDarkMode(hwndEditRunProgramsNativeWindow, isDark);
+    }
+}
 
 static IAsyncAction OnClickAccept(
     KBMEditor::KeyboardManagerState& keyboardManagerState,
@@ -82,7 +97,7 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
         windowClass.lpfnWndProc = EditRunProgramsWindowProc;
         windowClass.hInstance = hInst;
         windowClass.lpszClassName = szWindowClass;
-        windowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW);
+        windowClass.hbrBackground = CreateSolidBrush((ThemeHelpers::GetAppTheme() == AppTheme::Dark) ? 0x00000000 : 0x00FFFFFF);
         windowClass.hIcon = static_cast<HICON>(LoadImageW(
             windowClass.hInstance,
             MAKEINTRESOURCE(IDS_KEYBOARDMANAGER_ICON),
@@ -139,14 +154,20 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
     hwndEditRunProgramsNativeWindow = _hWndEditRunProgramsWindow;
     hwndLock.unlock();
 
+    // Hide icon and caption from title bar
+    const DWORD windowThemeOptionsMask = WTNCA_NODRAWCAPTION | WTNCA_NODRAWICON;
+    WTA_OPTIONS windowThemeOptions{ windowThemeOptionsMask, windowThemeOptionsMask };
+    SetWindowThemeAttribute(_hWndEditRunProgramsWindow, WTA_NONCLIENT, &windowThemeOptions, sizeof(windowThemeOptions));
+
+    handleTheme();
+    theme_listener.AddChangedHandler(handleTheme);
+
     // Create the xaml bridge object
-    XamlBridge xamlBridge(_hWndEditRunProgramsWindow);
-
-    // DesktopSource needs to be declared before the RelativePanel xamlContainer object to avoid errors
-    winrt::Windows::UI::Xaml::Hosting::DesktopWindowXamlSource desktopSource;
-
+    XamlBridge2 xamlBridge(_hWndEditRunProgramsWindow);
+    
     // Create the desktop window xaml source object and set its content
-    hWndXamlIslandEditRunProgramsWindow = xamlBridge.InitDesktopWindowsXamlSource(desktopSource);
+    //hWndXamlIslandEditRunProgramsWindow = xamlBridge.InitDesktopWindowsXamlSource(desktopSource);
+    hWndXamlIslandEditRunProgramsWindow = xamlBridge.InitBridge();
 
     // Set the pointer to the xaml bridge object
     xamlBridgePtr = &xamlBridge;
@@ -336,7 +357,19 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
     {
     }
 
-    desktopSource.Content(xamlContainer);
+    UserControl xamlContent;
+    xamlContent.Content(xamlContainer);
+    if (Windows::Foundation::Metadata::ApiInformation::IsTypePresent(L"Windows.UI.Composition.ICompositionSupportsSystemBackdrop"))
+    {
+        // Apply Mica
+        muxc::BackdropMaterial::SetApplyToRootOrPageBackground(xamlContent, true);
+    }
+    else
+    {
+        // Mica isn't available
+        xamlContainer.Background(Application::Current().Resources().Lookup(box_value(L"ApplicationPageBackgroundThemeBrush")).as<Media::SolidColorBrush>());
+    }
+    Window::Current().Content(xamlContent);
 
     ////End XAML Island section
     if (_hWndEditRunProgramsWindow)
@@ -355,9 +388,6 @@ inline void CreateEditRunProgramsWindowImpl(HINSTANCE hInst, KBMEditor::Keyboard
     hwndEditRunProgramsNativeWindow = nullptr;
     keyboardManagerState.ResetUIState();
     keyboardManagerState.ClearRegisteredKeyDelays();
-
-    // Cannot be done in WM_DESTROY because that causes crashes due to fatal app exit
-    xamlBridge.ClearXamlIslands();
 }
 
 void CreateEditRunProgramsWindow(HINSTANCE hInst, KBMEditor::KeyboardManagerState& keyboardManagerState, MappingConfiguration& mappingConfiguration)
@@ -424,7 +454,8 @@ LRESULT CALLBACK EditRunProgramsWindowProc(HWND hWnd, UINT messageCode, WPARAM w
             rect->top,
             rect->right - rect->left,
             rect->bottom - rect->top,
-            SWP_NOZORDER | SWP_NOACTIVATE);
+            SWP_NOZORDER | SWP_NOACTIVATE
+        );
 
         Logger::trace(L"WM_DPICHANGED: new dpi {} rect {} {} ", newDPI, rect->right - rect->left, rect->bottom - rect->top);
     }
