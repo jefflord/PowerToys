@@ -694,7 +694,7 @@
     <value>Create a global shortcut that will start a specific configured program</value>
   </data>
   <data name="KeyboardManager_RemapRunProgramButton.Header" xml:space="preserve">
-    <value>Create a shorcut to start a program</value>
+    <value>Shortcuts to start programs</value>
   </data>
 	<data name="KeyboardManager_Shortcuts.Header" xml:space="preserve">
     <value>Shortcuts</value>

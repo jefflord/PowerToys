@@ -382,7 +382,7 @@ namespace CentralizedKeyboardHook
                         auto fileNamePart = GetFileNameFromPath(runProgramSpec.path);
                         DWORD targetPid = 0;
 
-                        if (fileNamePart != L"explorer.exe" && fileNamePart != L"powershell.exe" && fileNamePart != L"cmd.exe")
+                        if (fileNamePart != L"explorer.exe" && fileNamePart != L"powershell.exe" && fileNamePart != L"cmd.exe" && fileNamePart != L"msedge.exe")
                         {
                             targetPid = GetProcessIdByName(fileNamePart);
                         }
@@ -404,7 +404,11 @@ namespace CentralizedKeyboardHook
                                 else
                                 {
                                     ShowWindow(hwnd, SW_RESTORE);
-
+                                    ShowWindow(hwnd, SW_SHOWDEFAULT);
+                                    ShowWindow(hwnd, SW_NORMAL);
+                                    //ShowWindow(hwnd, SW_MAXIMIZE);
+                                    
+                                    
                                     if (!SetForegroundWindow(hwnd))
                                     {
                                         auto errorCode = GetLastError();
